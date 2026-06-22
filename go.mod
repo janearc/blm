@@ -6,6 +6,7 @@ require (
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/go-git/go-git/v5 v5.19.1
 	github.com/twmb/franz-go v1.21.3
+	github.com/twmb/franz-go/pkg/kadm v1.18.0
 	google.golang.org/protobuf v1.36.11
 )
 
