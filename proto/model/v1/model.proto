@@ -1,0 +1,91 @@
+syntax = "proto3";
+
+// Package model.v1 is the model abstraction contract: the descriptor that makes
+// any model -- text, audio, or image; local or remote -- addressable through one
+// interface. Generated to Go and Python (betterproto) from this single source;
+// the client picks a transport from `provider` and exposes the op for `role`.
+package model.v1;
+
+// Modality is the medium a model works in. This is the axis that lets one
+// abstraction span text (mistral, flan), audio (whisper, Qwen2-Audio), and image
+// (comfyui workflows) without a separate client per kind.
+enum Modality {
+  MODALITY_UNSPECIFIED = 0;
+  MODALITY_TEXT = 1;
+  MODALITY_AUDIO = 2;
+  MODALITY_IMAGE = 3;
+}
+
+// Architecture is the model's internal shape, which determines how it is driven.
+enum Architecture {
+  ARCHITECTURE_UNSPECIFIED = 0;
+  ARCHITECTURE_DECODER = 1;          // causal LM: mistral, llama, Qwen2-Audio
+  ARCHITECTURE_ENCODER_DECODER = 2;  // seq2seq: flan-t5, whisper
+  ARCHITECTURE_ENCODER = 3;          // embeddings
+}
+
+// Role is what the model is used FOR -- it selects the operation a caller invokes
+// on the client surface, and is checked against the model's capabilities.
+enum Role {
+  ROLE_UNSPECIFIED = 0;
+  ROLE_CHAT = 1;               // messages -> text
+  ROLE_COMPLETION = 2;         // prompt -> text (decoder or seq2seq)
+  ROLE_EMBEDDING = 3;          // text -> vector
+  ROLE_TRANSCRIPTION = 4;      // audio -> text (whisper)
+  ROLE_AUDIO_ANNOTATION = 5;   // audio + prompt -> text (Qwen2-Audio)
+  ROLE_IMAGE_GENERATION = 6;   // prompt/params -> image (in-process diffusion model)
+}
+
+// Provider is the transport that serves the model. The end state fronts most of
+// these through the model-svc gateway; ollama and in-process are today's direct
+// transports, and anthropic (et al.) are the remote, authenticated providers.
+enum Provider {
+  PROVIDER_UNSPECIFIED = 0;
+  PROVIDER_OLLAMA = 1;             // decoder chat/completion over /api/generate
+  PROVIDER_IN_PROCESS = 2;         // loaded in-process (transformers/MLX) on Metal
+  PROVIDER_OPENAI_COMPATIBLE = 3;  // any OpenAI-API-shaped endpoint
+  PROVIDER_ANTHROPIC = 4;          // remote, authenticated (key via secretKeyRef)
+  PROVIDER_COMFYUI = 5;            // image workflow engine (a "model" is a workflow)
+}
+
+// ModelDescriptor is the resolved identity of one model. Resolution maps a
+// logical name to a live descriptor (delightd discovery for served models, or
+// static config for in-process/remote); the client then dispatches on
+// provider + role.
+message ModelDescriptor {
+  string name = 1;             // logical name, e.g. "mistral", "flan-t5-large"
+  Modality modality = 2;
+  Architecture architecture = 3;
+  Role role = 4;
+  Provider provider = 5;
+  string endpoint = 6;         // provider URL; empty for in-process
+  string model_id = 7;         // provider-specific id / HF id / comfyui workflow ref
+  // auth_secret names the env var (a Kube secretKeyRef injection) holding the
+  // credential for remote providers; empty for local/unauthenticated ones.
+  string auth_secret = 8;
+}
+
+// ModelFamily describes a KIND of model hosted/available in the mesh and the
+// concrete models that serve it. It is the discovery/catalog unit, one level
+// above ModelDescriptor: an agent or service asks "what kinds of models are
+// available here?" and gets families (transcription, text-chat, image-generation,
+// ...), each with its available members and a default. This lets callers select
+// by intent ("give me a transcription model") rather than by hard-coded name,
+// and lets the mesh swap the concrete model under a family without callers
+// changing. Members of a family share its modality + role (its capability);
+// lineage grouping (e.g. all flan variants) is a different cut, not this one.
+message ModelFamily {
+  string name = 1;          // family/kind name, e.g. "transcription", "text-chat"
+  string description = 2;   // human-readable description of the kind (markdown ok)
+  Modality modality = 3;
+  Role role = 4;            // the capability every member of this family serves
+  repeated ModelDescriptor members = 5;  // the models currently available for it
+  string default_member = 6;             // member name to use when unspecified
+}
+
+// ModelCatalog is the mesh's full offering: every family hosted/available, as
+// reported by discovery (delightd). One round-trip answers "what can I do here,
+// and with which models?".
+message ModelCatalog {
+  repeated ModelFamily families = 1;
+}
