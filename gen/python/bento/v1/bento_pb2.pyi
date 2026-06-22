@@ -40,7 +40,7 @@ BANCHAN_STATE_DONE: BanchanState
 BANCHAN_STATE_FAILED: BanchanState
 
 class Bento(_message.Message):
-    __slots__ = ("id", "name", "kind", "state", "root_path", "created_at", "schema_json")
+    __slots__ = ("id", "name", "kind", "state", "root_path", "created_at", "schema_json", "prompt")
     ID_FIELD_NUMBER: _ClassVar[int]
     NAME_FIELD_NUMBER: _ClassVar[int]
     KIND_FIELD_NUMBER: _ClassVar[int]
@@ -48,6 +48,7 @@ class Bento(_message.Message):
     ROOT_PATH_FIELD_NUMBER: _ClassVar[int]
     CREATED_AT_FIELD_NUMBER: _ClassVar[int]
     SCHEMA_JSON_FIELD_NUMBER: _ClassVar[int]
+    PROMPT_FIELD_NUMBER: _ClassVar[int]
     id: str
     name: str
     kind: str
@@ -55,7 +56,8 @@ class Bento(_message.Message):
     root_path: str
     created_at: _timestamp_pb2.Timestamp
     schema_json: str
-    def __init__(self, id: _Optional[str] = ..., name: _Optional[str] = ..., kind: _Optional[str] = ..., state: _Optional[_Union[BentoState, str]] = ..., root_path: _Optional[str] = ..., created_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., schema_json: _Optional[str] = ...) -> None: ...
+    prompt: str
+    def __init__(self, id: _Optional[str] = ..., name: _Optional[str] = ..., kind: _Optional[str] = ..., state: _Optional[_Union[BentoState, str]] = ..., root_path: _Optional[str] = ..., created_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., schema_json: _Optional[str] = ..., prompt: _Optional[str] = ...) -> None: ...
 
 class Banchan(_message.Message):
     __slots__ = ("id", "name", "bento_id", "state", "trace_id", "started_at", "finished_at", "error_message")

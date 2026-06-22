@@ -53,6 +53,12 @@ message Bento {
   // schema_json carries kind-specific declared config (paling's schema.json:
   // archetype + routing). Free-form so a kind specializes without a contract change.
   string schema_json = 7;
+  // prompt is per-bento context that biases this kind's model passes, so the
+  // context travels with the unit of work instead of an ad-hoc CLI arg. For
+  // magpie it seeds whisper's initial_prompt (names, places, terms, what the
+  // recording is about) and the cleanup/heading passes; paling can use it for its
+  // stage prompts. Empty means no hint.
+  string prompt = 8;
 }
 
 // Banchan is one processing step over a bento (paling: verify, taxonometry,

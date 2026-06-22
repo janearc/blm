@@ -170,7 +170,13 @@ type Bento struct {
 	CreatedAt *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	// schema_json carries kind-specific declared config (paling's schema.json:
 	// archetype + routing). Free-form so a kind specializes without a contract change.
-	SchemaJson    string `protobuf:"bytes,7,opt,name=schema_json,json=schemaJson,proto3" json:"schema_json,omitempty"`
+	SchemaJson string `protobuf:"bytes,7,opt,name=schema_json,json=schemaJson,proto3" json:"schema_json,omitempty"`
+	// prompt is per-bento context that biases this kind's model passes, so the
+	// context travels with the unit of work instead of an ad-hoc CLI arg. For
+	// magpie it seeds whisper's initial_prompt (names, places, terms, what the
+	// recording is about) and the cleanup/heading passes; paling can use it for its
+	// stage prompts. Empty means no hint.
+	Prompt        string `protobuf:"bytes,8,opt,name=prompt,proto3" json:"prompt,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -250,6 +256,13 @@ func (x *Bento) GetCreatedAt() *timestamppb.Timestamp {
 func (x *Bento) GetSchemaJson() string {
 	if x != nil {
 		return x.SchemaJson
+	}
+	return ""
+}
+
+func (x *Bento) GetPrompt() string {
+	if x != nil {
+		return x.Prompt
 	}
 	return ""
 }
@@ -361,7 +374,7 @@ var File_bento_v1_bento_proto protoreflect.FileDescriptor
 
 const file_bento_v1_bento_proto_rawDesc = "" +
 	"\n" +
-	"\x14bento/v1/bento.proto\x12\bbento.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xe4\x01\n" +
+	"\x14bento/v1/bento.proto\x12\bbento.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xfc\x01\n" +
 	"\x05Bento\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x12\n" +
@@ -371,7 +384,8 @@ const file_bento_v1_bento_proto_rawDesc = "" +
 	"\n" +
 	"created_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12\x1f\n" +
 	"\vschema_json\x18\a \x01(\tR\n" +
-	"schemaJson\"\xae\x02\n" +
+	"schemaJson\x12\x16\n" +
+	"\x06prompt\x18\b \x01(\tR\x06prompt\"\xae\x02\n" +
 	"\aBanchan\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x19\n" +
