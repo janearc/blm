@@ -1,0 +1,43 @@
+[project]
+name = "blm-good-citizen"
+version = "0.4.0"
+description = "good-citizen: the Python citizen surface for the blm mesh -- the generated bento/banchan contracts plus the generated bento FSM harness."
+requires-python = ">=3.12"
+dependencies = [
+    # the generated protobuf message classes (bento_pb2, model_pb2, ...).
+    "protobuf",
+    # the runtime the generated bento FSM harness (bento_fsm) binds to.
+    "transitions",
+]
+
+# dev-only: linter + tests. the package ships without them.
+[dependency-groups]
+dev = [
+    "pytest",
+    "ruff",
+]
+
+# ruff: the lint gate, fleet-consistent at 100 cols. Run from this dir, so it lints the
+# hand-written good_citizen package only; the generated gen/ tree (a sibling) is never
+# restyled by our rules.
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "B", "N", "T201"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+# the wheel ships the hand-written good_citizen package plus the generated namespace
+# packages, which live in the sibling gen/python tree (buf writes them there). A
+# consumer (magpie) installs one package and gets both the citizen surface and the
+# contracts.
+[tool.hatch.build.targets.wheel]
+packages = ["good_citizen"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"../gen/python/bento" = "bento"
+"../gen/python/model" = "model"
+"../gen/python/observability" = "observability"

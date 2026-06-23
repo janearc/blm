@@ -1,16 +1,13 @@
-"""good-citizen model client (Python half), mirroring the Go client.
-
-Resolve a logical model name to a backend via delightd's discovery, fail-closed,
-and invoke it by provider. Python and Go are equally first-class: paling/magpie
-daemons use this, crepe/delightd use the Go client, both over the same model.v1
-contract. Generalized from paling's modelclient -- stdlib only, no deps, so any
-Python citizen can import it.
-
-Fail-closed is deliberate (the availability mandate): if delightd is down or
-nothing healthy serves the model, raise ModelUnavailable rather than inventing a
-local fallback. Resilience lives in delightd coming up, not in each consumer
-hedging.
-"""
+# good-citizen model client (Python half), mirroring the Go client.
+#
+# resolve a logical model name to a backend via delightd's discovery, fail-closed,
+# and invoke it by provider. paling/magpie daemons use this; crepe/delightd use the
+# Go client; both over the same model.v1 contract. Generalized from paling's
+# modelclient -- stdlib only, no deps, so any Python citizen can import it.
+#
+# fail-closed is deliberate (the availability mandate): if delightd is down or nothing
+# healthy serves the model, raise ModelUnavailable rather than inventing a local
+# fallback. Resilience lives in delightd coming up, not in each consumer hedging.
 
 import json
 import logging
@@ -23,16 +20,15 @@ DEFAULT_DELIGHTD_URL = os.environ.get("DELIGHTD_URL", "http://localhost:8088")
 
 
 class ModelUnavailable(RuntimeError):  # noqa: N818 - public name, matches the Go ErrModelUnavailable
-    """No healthy backend could be resolved for the requested model."""
+    # no healthy backend could be resolved for the requested model.
+    pass
 
 
 def resolve(name, delightd_url=None, timeout=3):
-    """Resolve a logical model name to {provider, url, model} via delightd.
-
-    Returns the first healthy provider whose served model name contains `name`
-    (ollama reports e.g. "mistral:latest", so we substring-match), or None if
-    delightd is unreachable or nothing healthy serves it -- fail-closed.
-    """
+    # resolve a logical model name to {provider, url, model} via delightd. Returns the
+    # first healthy provider whose served model name contains `name` (ollama reports
+    # e.g. "mistral:latest", so we substring-match), or None if delightd is unreachable
+    # or nothing healthy serves it -- fail-closed.
     base = (delightd_url or DEFAULT_DELIGHTD_URL).rstrip("/")
     try:
         with urllib.request.urlopen(base + "/discovery/llms", timeout=timeout) as r:
@@ -53,12 +49,10 @@ def resolve(name, delightd_url=None, timeout=3):
 
 
 def generate(name, prompt, delightd_url=None, timeout=120, **opts):
-    """Resolve `name` and run a single (non-streaming) completion, by provider.
-
-    Raises ModelUnavailable if nothing serves the model (fail-closed). Only the
-    ollama provider is wired here; in-process (MLX/transformers) and remote
-    providers land with the in-process backend and the model-svc gateway.
-    """
+    # resolve `name` and run a single (non-streaming) completion, by provider. Raises
+    # ModelUnavailable if nothing serves the model (fail-closed). Only the ollama
+    # provider is wired here; in-process (MLX/transformers) and remote providers land
+    # with the in-process backend and the model-svc gateway.
     backend = resolve(name, delightd_url=delightd_url)
     if backend is None:
         raise ModelUnavailable(f"no backend serves model {name!r} (is delightd up?)")

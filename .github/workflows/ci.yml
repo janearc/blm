@@ -5,10 +5,9 @@ name: ci
 # the rest of the fleet vendors from. Go builds and tests on ubuntu; the MLX runtime
 # is not exercised here.
 #
-# This gates the GO side and the GEN-DRIFT check (committed gen must match a fresh
-# `buf generate` with the pinned toolchain). One gate is still deferred and tracked:
-#   - the python gate (ruff + tools/lint/no_docstrings.py on hand-written python,
-#     gen/ exempt) lands with good-citizen P3, when blm/python gets its pyproject.
+# This gates the GO side, the GEN-DRIFT check (committed gen must match a fresh
+# `buf generate` with the pinned toolchain), and the PYTHON side (ruff + the docstring
+# ban on hand-written python; the generated gen/ tree is exempt).
 
 on:
   push:
@@ -84,3 +83,26 @@ jobs:
             exit 1
           fi
           echo "gen is in sync with the contracts"
+
+  python:
+    # blm's hand-written python (good_citizen) gate: ruff + the docstring ban. The
+    # generated gen/ tree is exempt -- generated code is not ours to restyle. pytest
+    # joins when good_citizen grows tests (the producer surface).
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Lint (ruff)
+        working-directory: python
+        run: uvx ruff check good_citizen
+
+      - name: Bounce docstrings (standards §4; gen/ exempt)
+        run: python3 tools/lint/no_docstrings.py python/good_citizen
