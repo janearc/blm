@@ -123,8 +123,8 @@ func messageIndex(msg proto.Message) []byte {
 	if idx == 0 {
 		return []byte{0x00}
 	}
-	b := binary.AppendVarint(nil, 1)            // count = 1, zig-zag varint
-	b = binary.AppendVarint(b, int64(idx))      // the index, zig-zag varint
+	b := binary.AppendVarint(nil, 1)       // count = 1, zig-zag varint
+	b = binary.AppendVarint(b, int64(idx)) // the index, zig-zag varint
 	return b
 }
 

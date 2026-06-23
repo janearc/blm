@@ -1,0 +1,48 @@
+name: ci
+
+# blm is the fleet's contracts + the good-citizen Go library (with a small python
+# side for the MLX/betterproto surface). This is blm's own CI and the canonical gate
+# the rest of the fleet vendors from. Go builds and tests on ubuntu; the MLX runtime
+# is not exercised here.
+#
+# THIS FIRST CUT GATES THE GO SIDE ONLY. Two gates are deferred and tracked:
+#   - the python gate (ruff + tools/lint/no_docstrings.py on hand-written python,
+#     gen/ exempt) lands with good-citizen P3, when blm/python gets its pyproject.
+#   - the buf gen-drift gate (committed gen must match a fresh `buf generate`) lands
+#     with good-citizen P2.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  go:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: gofmt (no diffs allowed)
+        run: |
+          unformatted="$(gofmt -l .)"
+          if [ -n "$unformatted" ]; then
+            echo "these files need gofmt:"; echo "$unformatted"; exit 1
+          fi
+
+      - name: go vet
+        run: go vet ./...
+
+      - name: go build
+        run: go build ./...
+
+      - name: go test
+        run: go test ./...
