@@ -10,3 +10,6 @@ __pycache__/
 # local env
 .env
 .venv/
+
+# built protoc plugin (use `go install ./cmd/protoc-gen-fsm`)
+/protoc-gen-fsm
