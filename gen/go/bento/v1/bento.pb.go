@@ -4,16 +4,19 @@
 // 	protoc        (unknown)
 // source: bento/v1/bento.proto
 
-// Package bento.v1 is the shared unit-of-work contract: the bento/banchan model
-// every pipeline service reuses (paling, magpie, crepe, and whatever comes next).
-// A bento is a directory of inputs plus its staged outputs; a banchan is one
-// processing step over a bento. Modeled on paling's implementation and generated
-// to Go + Python, so every service shares the same shape and declares its own
-// KIND rather than reinventing the base.
+// Package bento.v1 is the pipeline data model for the mesh -- a substrate for ML/LLM
+// ops that automates pipelines (spark/hadoop lineage). A bento is a batch: the unit of
+// work that flows through a pipeline. A banchan is an irreducible element of that batch,
+// carrying its own assets. Services (magpie, paling, crepe) are pipelines built ON this
+// model, not the model. See docs/pipelines.md.
 //
-// Generated = data (these messages). Hand-written = behavior (the on-disk layout
-// -- raw_data/, schema/, adapters/, anchors/ -- and the stage execution) lives in
-// each service on top of the generated types.
+// Generated = data (these messages). Hand-written = behavior: the stages a handler runs
+// inside COOK live in each service on top, and never appear on the wire as states.
+//
+// This is the v0.5 core. The composition surface (a bento's desired destination, its
+// itinerary of stamps, hop bounds) and the convergence declaration are deliberately NOT
+// here yet -- destinations still have open design questions and convergence is undefined.
+// They land in a follow-up so the contract never carries a half-formed concept.
 
 package bentov1
 
@@ -33,34 +36,56 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// BentoState is the bento's lifecycle. Deliberately generic so every service
-// shares one enum; a service's domain phases (paling's PREPARING/TRAINING) are
-// PROCESSING here, with the specifics carried in the running banchan.
+// BentoState is the lifecycle a bento (the unit of work) flows through. The state
+// machine is deliberately simple: it emits and consumes events and does not reason about
+// the world. A handler reacts to the state for the bento guids it owns, does its work,
+// and emits the next state. No event, no handler call.
 type BentoState int32
 
 const (
 	BentoState_BENTO_STATE_UNSPECIFIED BentoState = 0
-	BentoState_BENTO_STATE_IDLE        BentoState = 1 // created; nothing running
-	BentoState_BENTO_STATE_PROCESSING  BentoState = 2 // a banchan is running
-	BentoState_BENTO_STATE_DONE        BentoState = 3
-	BentoState_BENTO_STATE_FAILED      BentoState = 4
+	// A bento has appeared; its pre-flight has not yet run.
+	BentoState_BENTO_STATE_NOTICED BentoState = 1
+	// A handler is processing the bento (transforming its banchans). The stages inside
+	// COOK are the handler's business and never appear on the wire as states.
+	BentoState_BENTO_STATE_COOK BentoState = 2
+	// Best-effort: worked, owned, not finished. The degraded outcome (e.g. a model was
+	// unavailable and the raw result is kept) and the state convergence will loop on.
+	BentoState_BENTO_STATE_PARTIAL BentoState = 3
+	// Processed; output written. Terminal.
+	BentoState_BENTO_STATE_DONE BentoState = 4
+	// Could not proceed (pre-flight failed) or processing errored. Terminal.
+	BentoState_BENTO_STATE_FAILED BentoState = 5
+	// Reserved -- declared to hold the namespace, not yet wired. Do not emit until they
+	// have defined behavior.
+	BentoState_BENTO_STATE_CHEW    BentoState = 20
+	BentoState_BENTO_STATE_DIGEST  BentoState = 21
+	BentoState_BENTO_STATE_SPOILED BentoState = 22
 )
 
 // Enum value maps for BentoState.
 var (
 	BentoState_name = map[int32]string{
-		0: "BENTO_STATE_UNSPECIFIED",
-		1: "BENTO_STATE_IDLE",
-		2: "BENTO_STATE_PROCESSING",
-		3: "BENTO_STATE_DONE",
-		4: "BENTO_STATE_FAILED",
+		0:  "BENTO_STATE_UNSPECIFIED",
+		1:  "BENTO_STATE_NOTICED",
+		2:  "BENTO_STATE_COOK",
+		3:  "BENTO_STATE_PARTIAL",
+		4:  "BENTO_STATE_DONE",
+		5:  "BENTO_STATE_FAILED",
+		20: "BENTO_STATE_CHEW",
+		21: "BENTO_STATE_DIGEST",
+		22: "BENTO_STATE_SPOILED",
 	}
 	BentoState_value = map[string]int32{
 		"BENTO_STATE_UNSPECIFIED": 0,
-		"BENTO_STATE_IDLE":        1,
-		"BENTO_STATE_PROCESSING":  2,
-		"BENTO_STATE_DONE":        3,
-		"BENTO_STATE_FAILED":      4,
+		"BENTO_STATE_NOTICED":     1,
+		"BENTO_STATE_COOK":        2,
+		"BENTO_STATE_PARTIAL":     3,
+		"BENTO_STATE_DONE":        4,
+		"BENTO_STATE_FAILED":      5,
+		"BENTO_STATE_CHEW":        20,
+		"BENTO_STATE_DIGEST":      21,
+		"BENTO_STATE_SPOILED":     22,
 	}
 )
 
@@ -91,99 +116,233 @@ func (BentoState) EnumDescriptor() ([]byte, []int) {
 	return file_bento_v1_bento_proto_rawDescGZIP(), []int{0}
 }
 
-// BanchanState is one processing step's status. Taken from paling's set, which is
-// already service-agnostic. NEEDS_MASSAGE means the step ran but its output wants
-// human or repair attention before downstream steps trust it.
-type BanchanState int32
+// BanchanAssetKind types the checks a banchan carries. A bento's pre-flight runs these
+// to assess readiness -- this is why elements carry tests rather than a handler
+// hard-coding them.
+type BanchanAssetKind int32
 
 const (
-	BanchanState_BANCHAN_STATE_UNSPECIFIED   BanchanState = 0
-	BanchanState_BANCHAN_STATE_NOT_STARTED   BanchanState = 1
-	BanchanState_BANCHAN_STATE_IN_PROGRESS   BanchanState = 2
-	BanchanState_BANCHAN_STATE_PARTIAL       BanchanState = 3
-	BanchanState_BANCHAN_STATE_NEEDS_MASSAGE BanchanState = 4
-	BanchanState_BANCHAN_STATE_DONE          BanchanState = 5
-	BanchanState_BANCHAN_STATE_FAILED        BanchanState = 6
+	BanchanAssetKind_BANCHAN_ASSET_KIND_UNSPECIFIED BanchanAssetKind = 0
+	// Must pass before the bento can be processed.
+	BanchanAssetKind_BANCHAN_ASSET_KIND_PRE_FLIGHT BanchanAssetKind = 1
+	// Defines when this element is acceptable / complete.
+	BanchanAssetKind_BANCHAN_ASSET_KIND_ACCEPTANCE_TEST BanchanAssetKind = 2
+	// Asserts this element works with the rest of the bento.
+	BanchanAssetKind_BANCHAN_ASSET_KIND_COMPATIBILITY_TEST BanchanAssetKind = 3
 )
 
-// Enum value maps for BanchanState.
+// Enum value maps for BanchanAssetKind.
 var (
-	BanchanState_name = map[int32]string{
-		0: "BANCHAN_STATE_UNSPECIFIED",
-		1: "BANCHAN_STATE_NOT_STARTED",
-		2: "BANCHAN_STATE_IN_PROGRESS",
-		3: "BANCHAN_STATE_PARTIAL",
-		4: "BANCHAN_STATE_NEEDS_MASSAGE",
-		5: "BANCHAN_STATE_DONE",
-		6: "BANCHAN_STATE_FAILED",
+	BanchanAssetKind_name = map[int32]string{
+		0: "BANCHAN_ASSET_KIND_UNSPECIFIED",
+		1: "BANCHAN_ASSET_KIND_PRE_FLIGHT",
+		2: "BANCHAN_ASSET_KIND_ACCEPTANCE_TEST",
+		3: "BANCHAN_ASSET_KIND_COMPATIBILITY_TEST",
 	}
-	BanchanState_value = map[string]int32{
-		"BANCHAN_STATE_UNSPECIFIED":   0,
-		"BANCHAN_STATE_NOT_STARTED":   1,
-		"BANCHAN_STATE_IN_PROGRESS":   2,
-		"BANCHAN_STATE_PARTIAL":       3,
-		"BANCHAN_STATE_NEEDS_MASSAGE": 4,
-		"BANCHAN_STATE_DONE":          5,
-		"BANCHAN_STATE_FAILED":        6,
+	BanchanAssetKind_value = map[string]int32{
+		"BANCHAN_ASSET_KIND_UNSPECIFIED":        0,
+		"BANCHAN_ASSET_KIND_PRE_FLIGHT":         1,
+		"BANCHAN_ASSET_KIND_ACCEPTANCE_TEST":    2,
+		"BANCHAN_ASSET_KIND_COMPATIBILITY_TEST": 3,
 	}
 )
 
-func (x BanchanState) Enum() *BanchanState {
-	p := new(BanchanState)
+func (x BanchanAssetKind) Enum() *BanchanAssetKind {
+	p := new(BanchanAssetKind)
 	*p = x
 	return p
 }
 
-func (x BanchanState) String() string {
+func (x BanchanAssetKind) String() string {
 	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
 }
 
-func (BanchanState) Descriptor() protoreflect.EnumDescriptor {
+func (BanchanAssetKind) Descriptor() protoreflect.EnumDescriptor {
 	return file_bento_v1_bento_proto_enumTypes[1].Descriptor()
 }
 
-func (BanchanState) Type() protoreflect.EnumType {
+func (BanchanAssetKind) Type() protoreflect.EnumType {
 	return &file_bento_v1_bento_proto_enumTypes[1]
 }
 
-func (x BanchanState) Number() protoreflect.EnumNumber {
+func (x BanchanAssetKind) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
 }
 
-// Deprecated: Use BanchanState.Descriptor instead.
-func (BanchanState) EnumDescriptor() ([]byte, []int) {
+// Deprecated: Use BanchanAssetKind.Descriptor instead.
+func (BanchanAssetKind) EnumDescriptor() ([]byte, []int) {
 	return file_bento_v1_bento_proto_rawDescGZIP(), []int{1}
 }
 
-// Bento is the atomic unit of work: a directory tree of inputs plus schema,
-// adapters, and staged outputs. Every bento has these base attributes; a service
-// declares a KIND (paling calls it the archetype -- voice-memo, character, scrape,
-// ...) and carries kind-specific config in schema_json, so a new kind extends the
-// model without changing the contract.
+// BanchanAsset is one check attached to an element -- a test the mesh can run to assess
+// readiness or acceptance without the handler hard-coding it.
+type BanchanAsset struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	Kind  BanchanAssetKind       `protobuf:"varint,1,opt,name=kind,proto3,enum=bento.v1.BanchanAssetKind" json:"kind,omitempty"`
+	// Where the asset lives (path or uri); the runner resolves it.
+	Location      string `protobuf:"bytes,2,opt,name=location,proto3" json:"location,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BanchanAsset) Reset() {
+	*x = BanchanAsset{}
+	mi := &file_bento_v1_bento_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BanchanAsset) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BanchanAsset) ProtoMessage() {}
+
+func (x *BanchanAsset) ProtoReflect() protoreflect.Message {
+	mi := &file_bento_v1_bento_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BanchanAsset.ProtoReflect.Descriptor instead.
+func (*BanchanAsset) Descriptor() ([]byte, []int) {
+	return file_bento_v1_bento_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *BanchanAsset) GetKind() BanchanAssetKind {
+	if x != nil {
+		return x.Kind
+	}
+	return BanchanAssetKind_BANCHAN_ASSET_KIND_UNSPECIFIED
+}
+
+func (x *BanchanAsset) GetLocation() string {
+	if x != nil {
+		return x.Location
+	}
+	return ""
+}
+
+// Banchan is an irreducible ELEMENT of a bento -- a member, not a step. (A chatlogs
+// bento has a raw-logs banchan and an original-prompt banchan; magpie has the audio in
+// and the transcript out.) It is described well enough that a pipeline can verify its
+// bento is complete: every declared banchan present and its assets passing.
+type Banchan struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Globally-unique id. Banchans, bentos, and pipelines all identify by guid.
+	Guid string `protobuf:"bytes,1,opt,name=guid,proto3" json:"guid,omitempty"`
+	// The element's name (raw-logs, original-prompt, transcript, ...).
+	Name string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	// The element archetype, free-form per pipeline.
+	Kind string `protobuf:"bytes,3,opt,name=kind,proto3" json:"kind,omitempty"`
+	// Where this element's data lives, on disk or by uri.
+	Location string `protobuf:"bytes,4,opt,name=location,proto3" json:"location,omitempty"`
+	// The checks this element carries.
+	Assets        []*BanchanAsset `protobuf:"bytes,5,rep,name=assets,proto3" json:"assets,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Banchan) Reset() {
+	*x = Banchan{}
+	mi := &file_bento_v1_bento_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Banchan) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Banchan) ProtoMessage() {}
+
+func (x *Banchan) ProtoReflect() protoreflect.Message {
+	mi := &file_bento_v1_bento_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Banchan.ProtoReflect.Descriptor instead.
+func (*Banchan) Descriptor() ([]byte, []int) {
+	return file_bento_v1_bento_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *Banchan) GetGuid() string {
+	if x != nil {
+		return x.Guid
+	}
+	return ""
+}
+
+func (x *Banchan) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *Banchan) GetKind() string {
+	if x != nil {
+		return x.Kind
+	}
+	return ""
+}
+
+func (x *Banchan) GetLocation() string {
+	if x != nil {
+		return x.Location
+	}
+	return ""
+}
+
+func (x *Banchan) GetAssets() []*BanchanAsset {
+	if x != nil {
+		return x.Assets
+	}
+	return nil
+}
+
+// Bento is a batch -- the unit of work that flows through a pipeline. It holds its
+// elements and moves through BentoState. A bento is complete when its declared banchans
+// are present and their assets pass.
 type Bento struct {
-	state     protoimpl.MessageState `protogen:"open.v1"`
-	Id        string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"` // uuid
-	Name      string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	Kind      string                 `protobuf:"bytes,3,opt,name=kind,proto3" json:"kind,omitempty"` // the archetype: what kind of bento this is
-	State     BentoState             `protobuf:"varint,4,opt,name=state,proto3,enum=bento.v1.BentoState" json:"state,omitempty"`
-	RootPath  string                 `protobuf:"bytes,5,opt,name=root_path,json=rootPath,proto3" json:"root_path,omitempty"` // the bento's directory, under ${PREFIX}/var/<service>/bentos
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Globally-unique id (guid).
+	Id   string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Name string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	// The archetype: voice-memo, chatlogs, character, scrape, ...
+	Kind  string     `protobuf:"bytes,3,opt,name=kind,proto3" json:"kind,omitempty"`
+	State BentoState `protobuf:"varint,4,opt,name=state,proto3,enum=bento.v1.BentoState" json:"state,omitempty"`
+	// The bento's directory, under ${PREFIX}/var/<service>/bentos.
+	RootPath  string                 `protobuf:"bytes,5,opt,name=root_path,json=rootPath,proto3" json:"root_path,omitempty"`
 	CreatedAt *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	// schema_json carries kind-specific declared config (paling's schema.json:
-	// archetype + routing). Free-form so a kind specializes without a contract change.
+	// Kind-specific declared config (free-form, so a kind specializes without a contract
+	// change).
 	SchemaJson string `protobuf:"bytes,7,opt,name=schema_json,json=schemaJson,proto3" json:"schema_json,omitempty"`
-	// prompt is per-bento context that biases this kind's model passes, so the
-	// context travels with the unit of work instead of an ad-hoc CLI arg. For
-	// magpie it seeds whisper's initial_prompt (names, places, terms, what the
-	// recording is about) and the cleanup/heading passes; paling can use it for its
-	// stage prompts. Empty means no hint.
-	Prompt        string `protobuf:"bytes,8,opt,name=prompt,proto3" json:"prompt,omitempty"`
+	// Per-bento context that biases this kind's model passes (e.g. whisper's
+	// initial_prompt). Empty means no hint.
+	Prompt string `protobuf:"bytes,8,opt,name=prompt,proto3" json:"prompt,omitempty"`
+	// The elements this batch is made of.
+	Banchans      []*Banchan `protobuf:"bytes,9,rep,name=banchans,proto3" json:"banchans,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Bento) Reset() {
 	*x = Bento{}
-	mi := &file_bento_v1_bento_proto_msgTypes[0]
+	mi := &file_bento_v1_bento_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -195,7 +354,7 @@ func (x *Bento) String() string {
 func (*Bento) ProtoMessage() {}
 
 func (x *Bento) ProtoReflect() protoreflect.Message {
-	mi := &file_bento_v1_bento_proto_msgTypes[0]
+	mi := &file_bento_v1_bento_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -208,7 +367,7 @@ func (x *Bento) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Bento.ProtoReflect.Descriptor instead.
 func (*Bento) Descriptor() ([]byte, []int) {
-	return file_bento_v1_bento_proto_rawDescGZIP(), []int{0}
+	return file_bento_v1_bento_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *Bento) GetId() string {
@@ -267,38 +426,52 @@ func (x *Bento) GetPrompt() string {
 	return ""
 }
 
-// Banchan is one processing step over a bento (paling: verify, taxonometry,
-// extract, ...; magpie: transcribe, cleanup). Its lifecycle transitions are what
-// the good-citizen emit layer publishes to the bus as events.
-type Banchan struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"` // the step's name
-	BentoId       string                 `protobuf:"bytes,3,opt,name=bento_id,json=bentoId,proto3" json:"bento_id,omitempty"`
-	State         BanchanState           `protobuf:"varint,4,opt,name=state,proto3,enum=bento.v1.BanchanState" json:"state,omitempty"`
-	TraceId       string                 `protobuf:"bytes,5,opt,name=trace_id,json=traceId,proto3" json:"trace_id,omitempty"`
-	StartedAt     *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=started_at,json=startedAt,proto3" json:"started_at,omitempty"`
-	FinishedAt    *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=finished_at,json=finishedAt,proto3" json:"finished_at,omitempty"`
-	ErrorMessage  string                 `protobuf:"bytes,8,opt,name=error_message,json=errorMessage,proto3" json:"error_message,omitempty"`
+func (x *Bento) GetBanchans() []*Banchan {
+	if x != nil {
+		return x.Banchans
+	}
+	return nil
+}
+
+// BentoLifecycleEvent is what a bento announces on the bus when it enters a state -- the
+// unit the emit layer publishes and consumers react to. event_id is the idempotency key:
+// the same event delivered twice is one fact, not two.
+type BentoLifecycleEvent struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// uuid4 -- idempotency key.
+	EventId string `protobuf:"bytes,1,opt,name=event_id,json=eventId,proto3" json:"event_id,omitempty"`
+	// Correlates the events of one bento's processing.
+	TraceId string `protobuf:"bytes,2,opt,name=trace_id,json=traceId,proto3" json:"trace_id,omitempty"`
+	BentoId string `protobuf:"bytes,3,opt,name=bento_id,json=bentoId,proto3" json:"bento_id,omitempty"`
+	// The bento's kind, so a consumer can filter to kinds it cares about.
+	BentoKind string `protobuf:"bytes,4,opt,name=bento_kind,json=bentoKind,proto3" json:"bento_kind,omitempty"`
+	// The state just entered -- this is the trigger a handler binds to.
+	State BentoState `protobuf:"varint,5,opt,name=state,proto3,enum=bento.v1.BentoState" json:"state,omitempty"`
+	// The service/instance that last handled this bento (provenance).
+	Handler    string                 `protobuf:"bytes,6,opt,name=handler,proto3" json:"handler,omitempty"`
+	StartedAt  *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=started_at,json=startedAt,proto3" json:"started_at,omitempty"`
+	FinishedAt *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=finished_at,json=finishedAt,proto3" json:"finished_at,omitempty"`
+	// Set on FAILED.
+	ErrorMessage  string `protobuf:"bytes,9,opt,name=error_message,json=errorMessage,proto3" json:"error_message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *Banchan) Reset() {
-	*x = Banchan{}
-	mi := &file_bento_v1_bento_proto_msgTypes[1]
+func (x *BentoLifecycleEvent) Reset() {
+	*x = BentoLifecycleEvent{}
+	mi := &file_bento_v1_bento_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *Banchan) String() string {
+func (x *BentoLifecycleEvent) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*Banchan) ProtoMessage() {}
+func (*BentoLifecycleEvent) ProtoMessage() {}
 
-func (x *Banchan) ProtoReflect() protoreflect.Message {
-	mi := &file_bento_v1_bento_proto_msgTypes[1]
+func (x *BentoLifecycleEvent) ProtoReflect() protoreflect.Message {
+	mi := &file_bento_v1_bento_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -309,61 +482,68 @@ func (x *Banchan) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use Banchan.ProtoReflect.Descriptor instead.
-func (*Banchan) Descriptor() ([]byte, []int) {
-	return file_bento_v1_bento_proto_rawDescGZIP(), []int{1}
+// Deprecated: Use BentoLifecycleEvent.ProtoReflect.Descriptor instead.
+func (*BentoLifecycleEvent) Descriptor() ([]byte, []int) {
+	return file_bento_v1_bento_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *Banchan) GetId() string {
+func (x *BentoLifecycleEvent) GetEventId() string {
 	if x != nil {
-		return x.Id
+		return x.EventId
 	}
 	return ""
 }
 
-func (x *Banchan) GetName() string {
-	if x != nil {
-		return x.Name
-	}
-	return ""
-}
-
-func (x *Banchan) GetBentoId() string {
-	if x != nil {
-		return x.BentoId
-	}
-	return ""
-}
-
-func (x *Banchan) GetState() BanchanState {
-	if x != nil {
-		return x.State
-	}
-	return BanchanState_BANCHAN_STATE_UNSPECIFIED
-}
-
-func (x *Banchan) GetTraceId() string {
+func (x *BentoLifecycleEvent) GetTraceId() string {
 	if x != nil {
 		return x.TraceId
 	}
 	return ""
 }
 
-func (x *Banchan) GetStartedAt() *timestamppb.Timestamp {
+func (x *BentoLifecycleEvent) GetBentoId() string {
+	if x != nil {
+		return x.BentoId
+	}
+	return ""
+}
+
+func (x *BentoLifecycleEvent) GetBentoKind() string {
+	if x != nil {
+		return x.BentoKind
+	}
+	return ""
+}
+
+func (x *BentoLifecycleEvent) GetState() BentoState {
+	if x != nil {
+		return x.State
+	}
+	return BentoState_BENTO_STATE_UNSPECIFIED
+}
+
+func (x *BentoLifecycleEvent) GetHandler() string {
+	if x != nil {
+		return x.Handler
+	}
+	return ""
+}
+
+func (x *BentoLifecycleEvent) GetStartedAt() *timestamppb.Timestamp {
 	if x != nil {
 		return x.StartedAt
 	}
 	return nil
 }
 
-func (x *Banchan) GetFinishedAt() *timestamppb.Timestamp {
+func (x *BentoLifecycleEvent) GetFinishedAt() *timestamppb.Timestamp {
 	if x != nil {
 		return x.FinishedAt
 	}
 	return nil
 }
 
-func (x *Banchan) GetErrorMessage() string {
+func (x *BentoLifecycleEvent) GetErrorMessage() string {
 	if x != nil {
 		return x.ErrorMessage
 	}
@@ -374,7 +554,16 @@ var File_bento_v1_bento_proto protoreflect.FileDescriptor
 
 const file_bento_v1_bento_proto_rawDesc = "" +
 	"\n" +
-	"\x14bento/v1/bento.proto\x12\bbento.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xfc\x01\n" +
+	"\x14bento/v1/bento.proto\x12\bbento.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"Z\n" +
+	"\fBanchanAsset\x12.\n" +
+	"\x04kind\x18\x01 \x01(\x0e2\x1a.bento.v1.BanchanAssetKindR\x04kind\x12\x1a\n" +
+	"\blocation\x18\x02 \x01(\tR\blocation\"\x91\x01\n" +
+	"\aBanchan\x12\x12\n" +
+	"\x04guid\x18\x01 \x01(\tR\x04guid\x12\x12\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12\x12\n" +
+	"\x04kind\x18\x03 \x01(\tR\x04kind\x12\x1a\n" +
+	"\blocation\x18\x04 \x01(\tR\blocation\x12.\n" +
+	"\x06assets\x18\x05 \x03(\v2\x16.bento.v1.BanchanAssetR\x06assets\"\xab\x02\n" +
 	"\x05Bento\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x12\n" +
@@ -385,33 +574,37 @@ const file_bento_v1_bento_proto_rawDesc = "" +
 	"created_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12\x1f\n" +
 	"\vschema_json\x18\a \x01(\tR\n" +
 	"schemaJson\x12\x16\n" +
-	"\x06prompt\x18\b \x01(\tR\x06prompt\"\xae\x02\n" +
-	"\aBanchan\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
-	"\x04name\x18\x02 \x01(\tR\x04name\x12\x19\n" +
-	"\bbento_id\x18\x03 \x01(\tR\abentoId\x12,\n" +
-	"\x05state\x18\x04 \x01(\x0e2\x16.bento.v1.BanchanStateR\x05state\x12\x19\n" +
-	"\btrace_id\x18\x05 \x01(\tR\atraceId\x129\n" +
+	"\x06prompt\x18\b \x01(\tR\x06prompt\x12-\n" +
+	"\bbanchans\x18\t \x03(\v2\x11.bento.v1.BanchanR\bbanchans\"\xe8\x02\n" +
+	"\x13BentoLifecycleEvent\x12\x19\n" +
+	"\bevent_id\x18\x01 \x01(\tR\aeventId\x12\x19\n" +
+	"\btrace_id\x18\x02 \x01(\tR\atraceId\x12\x19\n" +
+	"\bbento_id\x18\x03 \x01(\tR\abentoId\x12\x1d\n" +
 	"\n" +
-	"started_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\tstartedAt\x12;\n" +
-	"\vfinished_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\n" +
+	"bento_kind\x18\x04 \x01(\tR\tbentoKind\x12*\n" +
+	"\x05state\x18\x05 \x01(\x0e2\x14.bento.v1.BentoStateR\x05state\x12\x18\n" +
+	"\ahandler\x18\x06 \x01(\tR\ahandler\x129\n" +
+	"\n" +
+	"started_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\tstartedAt\x12;\n" +
+	"\vfinished_at\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\n" +
 	"finishedAt\x12#\n" +
-	"\rerror_message\x18\b \x01(\tR\ferrorMessage*\x89\x01\n" +
+	"\rerror_message\x18\t \x01(\tR\ferrorMessage*\xe6\x01\n" +
 	"\n" +
 	"BentoState\x12\x1b\n" +
-	"\x17BENTO_STATE_UNSPECIFIED\x10\x00\x12\x14\n" +
-	"\x10BENTO_STATE_IDLE\x10\x01\x12\x1a\n" +
-	"\x16BENTO_STATE_PROCESSING\x10\x02\x12\x14\n" +
-	"\x10BENTO_STATE_DONE\x10\x03\x12\x16\n" +
-	"\x12BENTO_STATE_FAILED\x10\x04*\xd9\x01\n" +
-	"\fBanchanState\x12\x1d\n" +
-	"\x19BANCHAN_STATE_UNSPECIFIED\x10\x00\x12\x1d\n" +
-	"\x19BANCHAN_STATE_NOT_STARTED\x10\x01\x12\x1d\n" +
-	"\x19BANCHAN_STATE_IN_PROGRESS\x10\x02\x12\x19\n" +
-	"\x15BANCHAN_STATE_PARTIAL\x10\x03\x12\x1f\n" +
-	"\x1bBANCHAN_STATE_NEEDS_MASSAGE\x10\x04\x12\x16\n" +
-	"\x12BANCHAN_STATE_DONE\x10\x05\x12\x18\n" +
-	"\x14BANCHAN_STATE_FAILED\x10\x06B\x8b\x01\n" +
+	"\x17BENTO_STATE_UNSPECIFIED\x10\x00\x12\x17\n" +
+	"\x13BENTO_STATE_NOTICED\x10\x01\x12\x14\n" +
+	"\x10BENTO_STATE_COOK\x10\x02\x12\x17\n" +
+	"\x13BENTO_STATE_PARTIAL\x10\x03\x12\x14\n" +
+	"\x10BENTO_STATE_DONE\x10\x04\x12\x16\n" +
+	"\x12BENTO_STATE_FAILED\x10\x05\x12\x14\n" +
+	"\x10BENTO_STATE_CHEW\x10\x14\x12\x16\n" +
+	"\x12BENTO_STATE_DIGEST\x10\x15\x12\x17\n" +
+	"\x13BENTO_STATE_SPOILED\x10\x16*\xac\x01\n" +
+	"\x10BanchanAssetKind\x12\"\n" +
+	"\x1eBANCHAN_ASSET_KIND_UNSPECIFIED\x10\x00\x12!\n" +
+	"\x1dBANCHAN_ASSET_KIND_PRE_FLIGHT\x10\x01\x12&\n" +
+	"\"BANCHAN_ASSET_KIND_ACCEPTANCE_TEST\x10\x02\x12)\n" +
+	"%BANCHAN_ASSET_KIND_COMPATIBILITY_TEST\x10\x03B\x8b\x01\n" +
 	"\fcom.bento.v1B\n" +
 	"BentoProtoP\x01Z.github.com/janearc/blm/gen/go/bento/v1;bentov1\xa2\x02\x03BXX\xaa\x02\bBento.V1\xca\x02\bBento\\V1\xe2\x02\x14Bento\\V1\\GPBMetadata\xea\x02\tBento::V1b\x06proto3"
 
@@ -428,25 +621,30 @@ func file_bento_v1_bento_proto_rawDescGZIP() []byte {
 }
 
 var file_bento_v1_bento_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_bento_v1_bento_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_bento_v1_bento_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_bento_v1_bento_proto_goTypes = []any{
 	(BentoState)(0),               // 0: bento.v1.BentoState
-	(BanchanState)(0),             // 1: bento.v1.BanchanState
-	(*Bento)(nil),                 // 2: bento.v1.Bento
+	(BanchanAssetKind)(0),         // 1: bento.v1.BanchanAssetKind
+	(*BanchanAsset)(nil),          // 2: bento.v1.BanchanAsset
 	(*Banchan)(nil),               // 3: bento.v1.Banchan
-	(*timestamppb.Timestamp)(nil), // 4: google.protobuf.Timestamp
+	(*Bento)(nil),                 // 4: bento.v1.Bento
+	(*BentoLifecycleEvent)(nil),   // 5: bento.v1.BentoLifecycleEvent
+	(*timestamppb.Timestamp)(nil), // 6: google.protobuf.Timestamp
 }
 var file_bento_v1_bento_proto_depIdxs = []int32{
-	0, // 0: bento.v1.Bento.state:type_name -> bento.v1.BentoState
-	4, // 1: bento.v1.Bento.created_at:type_name -> google.protobuf.Timestamp
-	1, // 2: bento.v1.Banchan.state:type_name -> bento.v1.BanchanState
-	4, // 3: bento.v1.Banchan.started_at:type_name -> google.protobuf.Timestamp
-	4, // 4: bento.v1.Banchan.finished_at:type_name -> google.protobuf.Timestamp
-	5, // [5:5] is the sub-list for method output_type
-	5, // [5:5] is the sub-list for method input_type
-	5, // [5:5] is the sub-list for extension type_name
-	5, // [5:5] is the sub-list for extension extendee
-	0, // [0:5] is the sub-list for field type_name
+	1, // 0: bento.v1.BanchanAsset.kind:type_name -> bento.v1.BanchanAssetKind
+	2, // 1: bento.v1.Banchan.assets:type_name -> bento.v1.BanchanAsset
+	0, // 2: bento.v1.Bento.state:type_name -> bento.v1.BentoState
+	6, // 3: bento.v1.Bento.created_at:type_name -> google.protobuf.Timestamp
+	3, // 4: bento.v1.Bento.banchans:type_name -> bento.v1.Banchan
+	0, // 5: bento.v1.BentoLifecycleEvent.state:type_name -> bento.v1.BentoState
+	6, // 6: bento.v1.BentoLifecycleEvent.started_at:type_name -> google.protobuf.Timestamp
+	6, // 7: bento.v1.BentoLifecycleEvent.finished_at:type_name -> google.protobuf.Timestamp
+	8, // [8:8] is the sub-list for method output_type
+	8, // [8:8] is the sub-list for method input_type
+	8, // [8:8] is the sub-list for extension type_name
+	8, // [8:8] is the sub-list for extension extendee
+	0, // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_bento_v1_bento_proto_init() }
@@ -460,7 +658,7 @@ func file_bento_v1_bento_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_bento_v1_bento_proto_rawDesc), len(file_bento_v1_bento_proto_rawDesc)),
 			NumEnums:      2,
-			NumMessages:   2,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

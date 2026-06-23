@@ -1,76 +1,126 @@
 syntax = "proto3";
 
-// Package bento.v1 is the shared unit-of-work contract: the bento/banchan model
-// every pipeline service reuses (paling, magpie, crepe, and whatever comes next).
-// A bento is a directory of inputs plus its staged outputs; a banchan is one
-// processing step over a bento. Modeled on paling's implementation and generated
-// to Go + Python, so every service shares the same shape and declares its own
-// KIND rather than reinventing the base.
+// Package bento.v1 is the pipeline data model for the mesh -- a substrate for ML/LLM
+// ops that automates pipelines (spark/hadoop lineage). A bento is a batch: the unit of
+// work that flows through a pipeline. A banchan is an irreducible element of that batch,
+// carrying its own assets. Services (magpie, paling, crepe) are pipelines built ON this
+// model, not the model. See docs/pipelines.md.
 //
-// Generated = data (these messages). Hand-written = behavior (the on-disk layout
-// -- raw_data/, schema/, adapters/, anchors/ -- and the stage execution) lives in
-// each service on top of the generated types.
+// Generated = data (these messages). Hand-written = behavior: the stages a handler runs
+// inside COOK live in each service on top, and never appear on the wire as states.
+//
+// This is the v0.5 core. The composition surface (a bento's desired destination, its
+// itinerary of stamps, hop bounds) and the convergence declaration are deliberately NOT
+// here yet -- destinations still have open design questions and convergence is undefined.
+// They land in a follow-up so the contract never carries a half-formed concept.
 package bento.v1;
 
 import "google/protobuf/timestamp.proto";
 
-// BentoState is the bento's lifecycle. Deliberately generic so every service
-// shares one enum; a service's domain phases (paling's PREPARING/TRAINING) are
-// PROCESSING here, with the specifics carried in the running banchan.
+// BentoState is the lifecycle a bento (the unit of work) flows through. The state
+// machine is deliberately simple: it emits and consumes events and does not reason about
+// the world. A handler reacts to the state for the bento guids it owns, does its work,
+// and emits the next state. No event, no handler call.
 enum BentoState {
   BENTO_STATE_UNSPECIFIED = 0;
-  BENTO_STATE_IDLE = 1;        // created; nothing running
-  BENTO_STATE_PROCESSING = 2;  // a banchan is running
-  BENTO_STATE_DONE = 3;
-  BENTO_STATE_FAILED = 4;
+  // A bento has appeared; its pre-flight has not yet run.
+  BENTO_STATE_NOTICED = 1;
+  // A handler is processing the bento (transforming its banchans). The stages inside
+  // COOK are the handler's business and never appear on the wire as states.
+  BENTO_STATE_COOK = 2;
+  // Best-effort: worked, owned, not finished. The degraded outcome (e.g. a model was
+  // unavailable and the raw result is kept) and the state convergence will loop on.
+  BENTO_STATE_PARTIAL = 3;
+  // Processed; output written. Terminal.
+  BENTO_STATE_DONE = 4;
+  // Could not proceed (pre-flight failed) or processing errored. Terminal.
+  BENTO_STATE_FAILED = 5;
+
+  // Reserved -- declared to hold the namespace, not yet wired. Do not emit until they
+  // have defined behavior.
+  BENTO_STATE_CHEW = 20;
+  BENTO_STATE_DIGEST = 21;
+  BENTO_STATE_SPOILED = 22;
 }
 
-// BanchanState is one processing step's status. Taken from paling's set, which is
-// already service-agnostic. NEEDS_MASSAGE means the step ran but its output wants
-// human or repair attention before downstream steps trust it.
-enum BanchanState {
-  BANCHAN_STATE_UNSPECIFIED = 0;
-  BANCHAN_STATE_NOT_STARTED = 1;
-  BANCHAN_STATE_IN_PROGRESS = 2;
-  BANCHAN_STATE_PARTIAL = 3;
-  BANCHAN_STATE_NEEDS_MASSAGE = 4;
-  BANCHAN_STATE_DONE = 5;
-  BANCHAN_STATE_FAILED = 6;
+// BanchanAssetKind types the checks a banchan carries. A bento's pre-flight runs these
+// to assess readiness -- this is why elements carry tests rather than a handler
+// hard-coding them.
+enum BanchanAssetKind {
+  BANCHAN_ASSET_KIND_UNSPECIFIED = 0;
+  // Must pass before the bento can be processed.
+  BANCHAN_ASSET_KIND_PRE_FLIGHT = 1;
+  // Defines when this element is acceptable / complete.
+  BANCHAN_ASSET_KIND_ACCEPTANCE_TEST = 2;
+  // Asserts this element works with the rest of the bento.
+  BANCHAN_ASSET_KIND_COMPATIBILITY_TEST = 3;
 }
 
-// Bento is the atomic unit of work: a directory tree of inputs plus schema,
-// adapters, and staged outputs. Every bento has these base attributes; a service
-// declares a KIND (paling calls it the archetype -- voice-memo, character, scrape,
-// ...) and carries kind-specific config in schema_json, so a new kind extends the
-// model without changing the contract.
-message Bento {
-  string id = 1;          // uuid
-  string name = 2;
-  string kind = 3;        // the archetype: what kind of bento this is
-  BentoState state = 4;
-  string root_path = 5;   // the bento's directory, under ${PREFIX}/var/<service>/bentos
-  google.protobuf.Timestamp created_at = 6;
-  // schema_json carries kind-specific declared config (paling's schema.json:
-  // archetype + routing). Free-form so a kind specializes without a contract change.
-  string schema_json = 7;
-  // prompt is per-bento context that biases this kind's model passes, so the
-  // context travels with the unit of work instead of an ad-hoc CLI arg. For
-  // magpie it seeds whisper's initial_prompt (names, places, terms, what the
-  // recording is about) and the cleanup/heading passes; paling can use it for its
-  // stage prompts. Empty means no hint.
-  string prompt = 8;
+// BanchanAsset is one check attached to an element -- a test the mesh can run to assess
+// readiness or acceptance without the handler hard-coding it.
+message BanchanAsset {
+  BanchanAssetKind kind = 1;
+  // Where the asset lives (path or uri); the runner resolves it.
+  string location = 2;
 }
 
-// Banchan is one processing step over a bento (paling: verify, taxonometry,
-// extract, ...; magpie: transcribe, cleanup). Its lifecycle transitions are what
-// the good-citizen emit layer publishes to the bus as events.
+// Banchan is an irreducible ELEMENT of a bento -- a member, not a step. (A chatlogs
+// bento has a raw-logs banchan and an original-prompt banchan; magpie has the audio in
+// and the transcript out.) It is described well enough that a pipeline can verify its
+// bento is complete: every declared banchan present and its assets passing.
 message Banchan {
+  // Globally-unique id. Banchans, bentos, and pipelines all identify by guid.
+  string guid = 1;
+  // The element's name (raw-logs, original-prompt, transcript, ...).
+  string name = 2;
+  // The element archetype, free-form per pipeline.
+  string kind = 3;
+  // Where this element's data lives, on disk or by uri.
+  string location = 4;
+  // The checks this element carries.
+  repeated BanchanAsset assets = 5;
+}
+
+// Bento is a batch -- the unit of work that flows through a pipeline. It holds its
+// elements and moves through BentoState. A bento is complete when its declared banchans
+// are present and their assets pass.
+message Bento {
+  // Globally-unique id (guid).
   string id = 1;
-  string name = 2;        // the step's name
+  string name = 2;
+  // The archetype: voice-memo, chatlogs, character, scrape, ...
+  string kind = 3;
+  BentoState state = 4;
+  // The bento's directory, under ${PREFIX}/var/<service>/bentos.
+  string root_path = 5;
+  google.protobuf.Timestamp created_at = 6;
+  // Kind-specific declared config (free-form, so a kind specializes without a contract
+  // change).
+  string schema_json = 7;
+  // Per-bento context that biases this kind's model passes (e.g. whisper's
+  // initial_prompt). Empty means no hint.
+  string prompt = 8;
+  // The elements this batch is made of.
+  repeated Banchan banchans = 9;
+}
+
+// BentoLifecycleEvent is what a bento announces on the bus when it enters a state -- the
+// unit the emit layer publishes and consumers react to. event_id is the idempotency key:
+// the same event delivered twice is one fact, not two.
+message BentoLifecycleEvent {
+  // uuid4 -- idempotency key.
+  string event_id = 1;
+  // Correlates the events of one bento's processing.
+  string trace_id = 2;
   string bento_id = 3;
-  BanchanState state = 4;
-  string trace_id = 5;
-  google.protobuf.Timestamp started_at = 6;
-  google.protobuf.Timestamp finished_at = 7;
-  string error_message = 8;
+  // The bento's kind, so a consumer can filter to kinds it cares about.
+  string bento_kind = 4;
+  // The state just entered -- this is the trigger a handler binds to.
+  BentoState state = 5;
+  // The service/instance that last handled this bento (provenance).
+  string handler = 6;
+  google.protobuf.Timestamp started_at = 7;
+  google.protobuf.Timestamp finished_at = 8;
+  // Set on FAILED.
+  string error_message = 9;
 }

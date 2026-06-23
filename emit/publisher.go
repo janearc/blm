@@ -8,10 +8,10 @@
 // SILENT -- produce succeeds and only a consumer fails to deserialize. The
 // message-index is the sharp edge here: it is NOT always the single 0x00 byte
 // delightd's BackupEvent used. That is only the optimization for the FIRST
-// message in a file. BanchanLifecycleEvent is the second message in
-// banchan_event.proto, so its index is computed from the descriptor and zig-zag
-// encoded per the Confluent format. Getting this wrong is exactly the class of
-// bug the official serde would hide from us.
+// message in a file. BentoLifecycleEvent is not the first message in bento.proto,
+// so its index is computed from the descriptor and zig-zag encoded per the
+// Confluent format. Getting this wrong is exactly the class of bug the official
+// serde would hide from us.
 package emit
 
 import (
