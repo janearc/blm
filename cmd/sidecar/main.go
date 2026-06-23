@@ -11,6 +11,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
@@ -21,10 +22,13 @@ import (
 	"time"
 
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/janearc/blm/emit"
 	bentov1 "github.com/janearc/blm/gen/go/bento/v1"
+	observabilityv1 "github.com/janearc/blm/gen/go/observability/v1"
 	bentoproto "github.com/janearc/blm/proto/bento/v1"
+	observabilityproto "github.com/janearc/blm/proto/observability/v1"
 )
 
 const (
@@ -32,7 +36,14 @@ const (
 	// NOT subscribe here (it is the registry/orchestrator, not a bento consumer).
 	topicBentoEvents = "bento.events"
 	subjectBento     = "bento.v1.BentoLifecycleEvent"
+
+	// the observability topic obs-svc consumes; the sidecar is the citizen's only
+	// producer, so the heartbeat is the one thing touching kafka on its behalf.
+	topicObservability = "observability.events"
+	subjectHeartbeat   = "observability.v1.ServiceHealthHeartbeat"
 )
+
+var startTime = time.Now()
 
 var log = slog.New(slog.NewJSONHandler(os.Stderr, nil))
 
@@ -68,6 +79,40 @@ func emitIntake(ctx context.Context, pub *emit.Publisher) http.HandlerFunc {
 	}
 }
 
+// startHeartbeat polls the pipeline's /health and emits a ServiceHealthHeartbeat on a
+// ticker. Best-effort: a poll or publish failure is logged, never fatal. The heartbeat
+// is the observability signal obs-svc consumes -- the citizen pipeline never emits it
+// itself; the sidecar does, reflecting the poll (GREEN when /health is ok, else RED).
+func startHeartbeat(ctx context.Context, pub *emit.Publisher, serviceName, healthURL string) {
+	ticker := time.NewTicker(15 * time.Second)
+	defer ticker.Stop()
+	client := &http.Client{Timeout: 3 * time.Second}
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			state := observabilityv1.HealthState_HEALTH_STATE_RED
+			if resp, err := client.Get(healthURL); err == nil {
+				if resp.StatusCode == http.StatusOK {
+					state = observabilityv1.HealthState_HEALTH_STATE_GREEN
+				}
+				_ = resp.Body.Close()
+			}
+			hb := &observabilityv1.ServiceHealthHeartbeat{
+				ServiceName:    serviceName,
+				CurrentState:   state,
+				UptimeSeconds:  uint32(time.Since(startTime).Seconds()),
+				Timestamp:      timestamppb.Now(),
+				IdempotencyKey: fmt.Sprintf("%s-hb-%d", serviceName, time.Now().UnixNano()),
+			}
+			if err := pub.Publish(ctx, topicObservability, subjectHeartbeat, observabilityproto.Schema, hb.GetServiceName(), hb); err != nil {
+				log.Error("heartbeat emit failed", "err", err)
+			}
+		}
+	}
+}
+
 func main() {
 	log.Info("starting good-citizen emit sidecar")
 
@@ -87,6 +132,23 @@ func main() {
 		publisher = pub
 		defer publisher.Close()
 		log.Info("kafka emission ready", "topic", topicBentoEvents)
+		// the heartbeat needs a real identity. SERVICE_NAME has NO default on purpose:
+		// this sidecar is shared by every python pipeline, so a default would make them
+		// all heartbeat as one service on the bus. Each deployment sets it to its
+		// pipeline's name (magpie, paling, ...); unset -> no heartbeat, never a fake one.
+		serviceName := os.Getenv("SERVICE_NAME")
+		if serviceName == "" {
+			log.Warn("SERVICE_NAME unset; heartbeat disabled (set it to this pipeline's name)")
+		} else {
+			// healthURL is the pipeline's bare-metal /health that the sidecar polls each
+			// tick. Port 8090 is the fleet convention for a pipeline daemon's health
+			// endpoint (paling serve listens there; magpie on 8092) -- set
+			// PIPELINE_HEALTH_URL per pipeline. host.docker.internal is the
+			// container->host gateway, because the pipeline runs bare-metal (Metal/MLX),
+			// off the docker network.
+			healthURL := getenv("PIPELINE_HEALTH_URL", "http://host.docker.internal:8090/health")
+			go startHeartbeat(ctx, publisher, serviceName, healthURL)
+		}
 	}
 
 	mux := http.NewServeMux()
