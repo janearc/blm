@@ -27,7 +27,7 @@ plugins:
   # message classes -- the contract is the guardrail, not pydantic validation.
   # The Confluent-SR framing is added around the payload by the emit layer, same
   # as Go. Matches kafka-svc's generator.
-  - remote: buf.build/protocolbuffers/python
+  - remote: buf.build/protocolbuffers/python:v35.1
     out: gen/python
-  - remote: buf.build/protocolbuffers/pyi
+  - remote: buf.build/protocolbuffers/pyi:v35.1
     out: gen/python
