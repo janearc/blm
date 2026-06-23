@@ -31,3 +31,10 @@ plugins:
     out: gen/python
   - remote: buf.build/protocolbuffers/pyi
     out: gen/python
+  # protoc-gen-fsm again, this time emitting the Python harness (transitions) -- parity
+  # with the Go one, dispatching the same named handlers for the same states.
+  - local: protoc-gen-fsm
+    out: gen/python
+    opt:
+      - paths=source_relative
+      - lang=python
