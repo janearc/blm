@@ -85,9 +85,9 @@ jobs:
           echo "gen is in sync with the contracts"
 
   python:
-    # blm's hand-written python (good_citizen) gate: ruff + the docstring ban. The
-    # generated gen/ tree is exempt -- generated code is not ours to restyle. pytest
-    # joins when good_citizen grows tests (the producer surface).
+    # blm's hand-written python gate: ruff + the docstring ban + pytest. The generated
+    # gen/ tree is exempt (not ours to restyle) and lives outside python/; the bounce
+    # checker skips .venv. Tests get gen/ on the path via python/conftest.py.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -100,9 +100,17 @@ jobs:
       - name: Set up uv
         uses: astral-sh/setup-uv@v5
 
+      - name: Sync (dev group)
+        working-directory: python
+        run: uv sync --group dev
+
       - name: Lint (ruff)
         working-directory: python
-        run: uvx ruff check good_citizen
+        run: uv run ruff check .
 
       - name: Bounce docstrings (standards §4; gen/ exempt)
-        run: python3 tools/lint/no_docstrings.py python/good_citizen
+        run: python3 tools/lint/no_docstrings.py python
+
+      - name: Test (pytest)
+        working-directory: python
+        run: uv run pytest
