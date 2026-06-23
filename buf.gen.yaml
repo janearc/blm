@@ -14,6 +14,14 @@ plugins:
   - local: protoc-gen-go
     out: gen/go
     opt: paths=source_relative
+  # protoc-gen-fsm (local, in cmd/) emits the bento lifecycle harness from each *State
+  # enum: a Handlers interface (one method per active state) + a qmuntal/stateless
+  # machine that dispatches and auto-emits. Built via `go install ./cmd/protoc-gen-fsm`.
+  - local: protoc-gen-fsm
+    out: gen/go
+    opt:
+      - paths=source_relative
+      - lang=go
   # Official protobuf Python (protocolbuffers/python via buf's remote plugin):
   # stable, Google-maintained, no abandoned-beta dependency. Classic protobuf
   # message classes -- the contract is the guardrail, not pydantic validation.

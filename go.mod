@@ -5,6 +5,7 @@ go 1.26.4
 require (
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/go-git/go-git/v5 v5.19.1
+	github.com/qmuntal/stateless v1.8.0
 	github.com/reugn/go-quartz v0.15.2
 	github.com/twmb/franz-go v1.21.3
 	github.com/twmb/franz-go/pkg/kadm v1.18.0
