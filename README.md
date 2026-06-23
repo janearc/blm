@@ -12,6 +12,8 @@ few thousand engineers. here's the roster; the *why* is below it.
 | **obs-svc** | dashboards and a floating health widget | [janearc/obs-svc](https://github.com/janearc/obs-svc) |
 | **taco** | resilient transfers across a bad link | [janearc/taco](https://github.com/janearc/taco) |
 | **paling** | a fine-tuner that learns your voice | [janearc/paling](https://github.com/janearc/paling) |
+| **magpie** | voice memos in, clean transcripts out | [janearc/magpie](https://github.com/janearc/magpie) |
+| **good-citizen** | the shared library the services are built on — contracts, kafka, watching, scheduling | _this repo_ |
 | traefik, cloudflared, kube secrets | the edge: routing, exposure, the vault | _the perimeter_ |
 
 i am primarily (hi, i'm [max](https://github.com/janearc)) or perhaps only a backend engineer. and i have really only professionally worked in large environments where there was platform and infra or i was part of the effort to build that. i am a big believer in containerisation and to a lesser extent virtualisation, so when docker started to swallow devops (where i lived at the time), [it was a welcome change for me](https://youtu.be/FDgQdjidXpY).
