@@ -83,7 +83,7 @@ func emitIntake(ctx context.Context, pub *emit.Publisher) http.HandlerFunc {
 // ticker. Best-effort: a poll or publish failure is logged, never fatal. The heartbeat
 // is the observability signal obs-svc consumes -- the citizen pipeline never emits it
 // itself; the sidecar does, reflecting the poll (GREEN when /health is ok, else RED).
-func startHeartbeat(ctx context.Context, pub *emit.Publisher, healthURL string) {
+func startHeartbeat(ctx context.Context, pub *emit.Publisher, serviceName, healthURL string) {
 	ticker := time.NewTicker(15 * time.Second)
 	defer ticker.Stop()
 	client := &http.Client{Timeout: 3 * time.Second}
@@ -100,11 +100,11 @@ func startHeartbeat(ctx context.Context, pub *emit.Publisher, healthURL string) 
 				_ = resp.Body.Close()
 			}
 			hb := &observabilityv1.ServiceHealthHeartbeat{
-				ServiceName:    getenv("SERVICE_NAME", "good-citizen-sidecar"),
+				ServiceName:    serviceName,
 				CurrentState:   state,
 				UptimeSeconds:  uint32(time.Since(startTime).Seconds()),
 				Timestamp:      timestamppb.Now(),
-				IdempotencyKey: fmt.Sprintf("good-citizen-hb-%d", time.Now().UnixNano()),
+				IdempotencyKey: fmt.Sprintf("%s-hb-%d", serviceName, time.Now().UnixNano()),
 			}
 			if err := pub.Publish(ctx, topicObservability, subjectHeartbeat, observabilityproto.Schema, hb.GetServiceName(), hb); err != nil {
 				log.Error("heartbeat emit failed", "err", err)
@@ -132,8 +132,23 @@ func main() {
 		publisher = pub
 		defer publisher.Close()
 		log.Info("kafka emission ready", "topic", topicBentoEvents)
-		// heartbeat only runs with a live bus -- emitting to nowhere is pointless.
-		go startHeartbeat(ctx, publisher, getenv("PIPELINE_HEALTH_URL", "http://host.docker.internal:8090/health"))
+		// the heartbeat needs a real identity. SERVICE_NAME has NO default on purpose:
+		// this sidecar is shared by every python pipeline, so a default would make them
+		// all heartbeat as one service on the bus. Each deployment sets it to its
+		// pipeline's name (magpie, paling, ...); unset -> no heartbeat, never a fake one.
+		serviceName := os.Getenv("SERVICE_NAME")
+		if serviceName == "" {
+			log.Warn("SERVICE_NAME unset; heartbeat disabled (set it to this pipeline's name)")
+		} else {
+			// healthURL is the pipeline's bare-metal /health that the sidecar polls each
+			// tick. Port 8090 is the fleet convention for a pipeline daemon's health
+			// endpoint (paling serve listens there; magpie on 8092) -- set
+			// PIPELINE_HEALTH_URL per pipeline. host.docker.internal is the
+			// container->host gateway, because the pipeline runs bare-metal (Metal/MLX),
+			// off the docker network.
+			healthURL := getenv("PIPELINE_HEALTH_URL", "http://host.docker.internal:8090/health")
+			go startHeartbeat(ctx, publisher, serviceName, healthURL)
+		}
 	}
 
 	mux := http.NewServeMux()
