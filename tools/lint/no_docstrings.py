@@ -29,11 +29,17 @@ def _docstring_lines(path):
 
 
 def main(argv):
-    # check every path given (a file, or a dir walked for *.py). default: cwd.
+    # check every path given (a file, or a dir walked for *.py; default cwd). skip
+    # directories that are never ours to check -- virtualenvs, caches, vendored trees,
+    # build output -- so pointing the checker at a package dir can't trip over its .venv.
+    skip = {".venv", "venv", "__pycache__", ".git", "node_modules", "dist", "build", ".tox", ".mypy_cache"}
     files = []
     for arg in argv or ["."]:
         p = Path(arg)
-        files += [p] if p.is_file() else sorted(p.rglob("*.py"))
+        if p.is_file():
+            files.append(p)
+        else:
+            files += [f for f in sorted(p.rglob("*.py")) if not (skip & set(f.parts))]
     hits = []
     for f in files:
         for line in _docstring_lines(f):
