@@ -75,30 +75,32 @@ func newMachine(initial BentoState) *stateless.StateMachine {
 	return m
 }
 
-// Run drives a Bento from its current state through the lifecycle: it dispatches the
-// state to its handler, takes the returned next state, validates and applies the
-// transition (the stateless machine rejects entering an undeclared state), then emits.
-// It repeats until a handler returns the terminal BentoState_BENTO_STATE_UNSPECIFIED. The caller sets the entry
-// state (e.g. the watcher sets NOTICED) before calling Run.
-func Run(ctx context.Context, h Handlers, e Emitter, b *Bento) error {
-	m := newMachine(b.GetState())
-	for {
-		cur := m.MustState().(BentoState)
-		next, err := dispatch(ctx, h, b, cur)
-		if err != nil {
-			return err
-		}
-		if next == BentoState_BENTO_STATE_UNSPECIFIED {
-			return nil
-		}
-		if err := m.Fire(next); err != nil {
-			return fmt.Errorf("bento.v1 fsm: illegal transition %v -> %v: %w", cur, next, err)
-		}
-		b.State = next
-		if e != nil {
-			if err := e.EmitLifecycle(ctx, b, next); err != nil {
-				return err
-			}
-		}
+// Step handles ONE transition and then returns: it dispatches the Bento's current
+// state to its handler, validates the single state the handler returns (the machine
+// rejects an undeclared state), applies it, and emits the lifecycle event for it.
+// It does one job and is done -- the emitted event is what drives the next step, and
+// any instance can pick that up. There is no in-process loop holding state across
+// steps: the in-flight state lives on the bus (the last lifecycle event) and on the
+// Bento, never in memory, so a process may die between steps and another resumes.
+// A handler returning BentoState_BENTO_STATE_UNSPECIFIED is terminal (nothing to emit). Re-handling the same
+// event must be idempotent -- the bus may redeliver, and recovery replays.
+func Step(ctx context.Context, h Handlers, e Emitter, b *Bento) error {
+	cur := b.GetState()
+	next, err := dispatch(ctx, h, b, cur)
+	if err != nil {
+		return err
 	}
+	if next == BentoState_BENTO_STATE_UNSPECIFIED {
+		return nil
+	}
+	// build a fresh machine seeded at the current state purely to VALIDATE this one
+	// transition (containment); it is not retained across steps.
+	if err := newMachine(cur).Fire(next); err != nil {
+		return fmt.Errorf("bento.v1 fsm: illegal transition %v -> %v: %w", cur, next, err)
+	}
+	b.State = next
+	if e != nil {
+		return e.EmitLifecycle(ctx, b, next)
+	}
+	return nil
 }
