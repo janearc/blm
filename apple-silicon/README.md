@@ -11,22 +11,23 @@ wrapper *call* it. There is no standalone CLI — this is a machine-first compon
 
 ## State (incremental)
 
-- [x] **`Capabilities` library builds.** The bounded single-arbiter plus the
-  transcription (audio→text) and synthesis (text→audio, +Personal Voice) capabilities,
-  behind one uniform request/result.
-- [ ] **Serving daemon.** An executable that imports `Capabilities` and serves
-  `model.v1` operations as protojson over local HTTP, plus `/health`. (model.v1 gains
-  the operation messages — a contract bump — and a small Swift emitter generates the
-  matching `Codable` types.)
-- [ ] **Discovery.** Announce a `sidecar.v1.SidecarDescriptor`, register with delightd,
-  emit the observability heartbeat.
-- [ ] **Text capability.** Add the on-device foundation model (text→text) to the same
-  arbiter.
+- [x] **`Capabilities` library** — the single-arbiter (one bouncer per chip) +
+  transcription/synthesis, with a `Router` that dispatches by role and sheds BUSY.
+- [x] **Contracts wired** — `model.v1` `Invoke` messages + a Swift `Codable` emitter
+  (`gen/swift`); the `ProviderService` adapter maps `InvokeRequest` ⟷ the capability core.
+- [ ] **HTTP transport** — a `Network.framework` daemon serving `model.v1` protojson +
+  `/health` (a thin executable that calls `ProviderService`).
+- [ ] **Discovery** — announce a `sidecar.v1.SidecarDescriptor`; delightd's poll picks it up.
+- [ ] **Text capability** — add the on-device foundation model (text→text) to the arbiter.
 
 ## Build
 
+The Swift package is rooted at the **repo root** (one package, mirroring the single
+`go.mod`):
+
 ```
-swift build
+swift build      # from the blm repo root
+swift test
 ```
 
 ## Requirements
