@@ -106,3 +106,41 @@ class ModelCatalog(_message.Message):
     FAMILIES_FIELD_NUMBER: _ClassVar[int]
     families: _containers.RepeatedCompositeFieldContainer[ModelFamily]
     def __init__(self, families: _Optional[_Iterable[_Union[ModelFamily, _Mapping]]] = ...) -> None: ...
+
+class InvokeRequest(_message.Message):
+    __slots__ = ("role", "model_id", "text", "input_path", "params")
+    class ParamsEntry(_message.Message):
+        __slots__ = ("key", "value")
+        KEY_FIELD_NUMBER: _ClassVar[int]
+        VALUE_FIELD_NUMBER: _ClassVar[int]
+        key: str
+        value: str
+        def __init__(self, key: _Optional[str] = ..., value: _Optional[str] = ...) -> None: ...
+    ROLE_FIELD_NUMBER: _ClassVar[int]
+    MODEL_ID_FIELD_NUMBER: _ClassVar[int]
+    TEXT_FIELD_NUMBER: _ClassVar[int]
+    INPUT_PATH_FIELD_NUMBER: _ClassVar[int]
+    PARAMS_FIELD_NUMBER: _ClassVar[int]
+    role: Role
+    model_id: str
+    text: str
+    input_path: str
+    params: _containers.ScalarMap[str, str]
+    def __init__(self, role: _Optional[_Union[Role, str]] = ..., model_id: _Optional[str] = ..., text: _Optional[str] = ..., input_path: _Optional[str] = ..., params: _Optional[_Mapping[str, str]] = ...) -> None: ...
+
+class InvokeResponse(_message.Message):
+    __slots__ = ("text", "output_path", "detail")
+    class DetailEntry(_message.Message):
+        __slots__ = ("key", "value")
+        KEY_FIELD_NUMBER: _ClassVar[int]
+        VALUE_FIELD_NUMBER: _ClassVar[int]
+        key: str
+        value: str
+        def __init__(self, key: _Optional[str] = ..., value: _Optional[str] = ...) -> None: ...
+    TEXT_FIELD_NUMBER: _ClassVar[int]
+    OUTPUT_PATH_FIELD_NUMBER: _ClassVar[int]
+    DETAIL_FIELD_NUMBER: _ClassVar[int]
+    text: str
+    output_path: str
+    detail: _containers.ScalarMap[str, str]
+    def __init__(self, text: _Optional[str] = ..., output_path: _Optional[str] = ..., detail: _Optional[_Mapping[str, str]] = ...) -> None: ...

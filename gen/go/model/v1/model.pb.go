@@ -513,6 +513,154 @@ func (x *ModelCatalog) GetFamilies() []*ModelFamily {
 	return nil
 }
 
+// InvokeRequest runs one model operation against a resolved provider, dispatched
+// by `role` (and `model_id` when a family has several members). The fields are a
+// uniform superset across capabilities -- each role reads only the ones it needs:
+// transcription reads `input_path` (an audio file); synthesis and text read
+// `text`. `params` carries role-specific knobs (e.g. a synthesis output path).
+// This is the on-the-wire form of one capability call; the provider fronts every
+// role through this single shape.
+type InvokeRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Role          Role                   `protobuf:"varint,1,opt,name=role,proto3,enum=model.v1.Role" json:"role,omitempty"`
+	ModelId       string                 `protobuf:"bytes,2,opt,name=model_id,json=modelId,proto3" json:"model_id,omitempty"`                                                          // family member to use; empty = the default
+	Text          string                 `protobuf:"bytes,3,opt,name=text,proto3" json:"text,omitempty"`                                                                               // text input (synthesis, text)
+	InputPath     string                 `protobuf:"bytes,4,opt,name=input_path,json=inputPath,proto3" json:"input_path,omitempty"`                                                    // input file path (transcription audio)
+	Params        map[string]string      `protobuf:"bytes,5,rep,name=params,proto3" json:"params,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // role-specific options
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *InvokeRequest) Reset() {
+	*x = InvokeRequest{}
+	mi := &file_model_v1_model_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *InvokeRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*InvokeRequest) ProtoMessage() {}
+
+func (x *InvokeRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_model_v1_model_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use InvokeRequest.ProtoReflect.Descriptor instead.
+func (*InvokeRequest) Descriptor() ([]byte, []int) {
+	return file_model_v1_model_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *InvokeRequest) GetRole() Role {
+	if x != nil {
+		return x.Role
+	}
+	return Role_ROLE_UNSPECIFIED
+}
+
+func (x *InvokeRequest) GetModelId() string {
+	if x != nil {
+		return x.ModelId
+	}
+	return ""
+}
+
+func (x *InvokeRequest) GetText() string {
+	if x != nil {
+		return x.Text
+	}
+	return ""
+}
+
+func (x *InvokeRequest) GetInputPath() string {
+	if x != nil {
+		return x.InputPath
+	}
+	return ""
+}
+
+func (x *InvokeRequest) GetParams() map[string]string {
+	if x != nil {
+		return x.Params
+	}
+	return nil
+}
+
+// InvokeResponse is the uniform result. Each role fills the fields it produces:
+// transcription and text return `text`; synthesis returns `output_path` (an audio
+// file it wrote). `detail` carries provenance/notes (e.g. the voice used). A
+// "busy" rejection is signaled at the transport (HTTP 429/503), never as a result
+// here -- completion is the caller's bento to own, not this message's to report.
+type InvokeResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Text          string                 `protobuf:"bytes,1,opt,name=text,proto3" json:"text,omitempty"`                                                                               // text output (transcription, text)
+	OutputPath    string                 `protobuf:"bytes,2,opt,name=output_path,json=outputPath,proto3" json:"output_path,omitempty"`                                                 // output file path (synthesis audio)
+	Detail        map[string]string      `protobuf:"bytes,3,rep,name=detail,proto3" json:"detail,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // provenance / notes
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *InvokeResponse) Reset() {
+	*x = InvokeResponse{}
+	mi := &file_model_v1_model_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *InvokeResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*InvokeResponse) ProtoMessage() {}
+
+func (x *InvokeResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_model_v1_model_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use InvokeResponse.ProtoReflect.Descriptor instead.
+func (*InvokeResponse) Descriptor() ([]byte, []int) {
+	return file_model_v1_model_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *InvokeResponse) GetText() string {
+	if x != nil {
+		return x.Text
+	}
+	return ""
+}
+
+func (x *InvokeResponse) GetOutputPath() string {
+	if x != nil {
+		return x.OutputPath
+	}
+	return ""
+}
+
+func (x *InvokeResponse) GetDetail() map[string]string {
+	if x != nil {
+		return x.Detail
+	}
+	return nil
+}
+
 var File_model_v1_model_proto protoreflect.FileDescriptor
 
 const file_model_v1_model_proto_rawDesc = "" +
@@ -536,7 +684,25 @@ const file_model_v1_model_proto_rawDesc = "" +
 	"\amembers\x18\x05 \x03(\v2\x19.model.v1.ModelDescriptorR\amembers\x12%\n" +
 	"\x0edefault_member\x18\x06 \x01(\tR\rdefaultMember\"A\n" +
 	"\fModelCatalog\x121\n" +
-	"\bfamilies\x18\x01 \x03(\v2\x15.model.v1.ModelFamilyR\bfamilies*_\n" +
+	"\bfamilies\x18\x01 \x03(\v2\x15.model.v1.ModelFamilyR\bfamilies\"\xf9\x01\n" +
+	"\rInvokeRequest\x12\"\n" +
+	"\x04role\x18\x01 \x01(\x0e2\x0e.model.v1.RoleR\x04role\x12\x19\n" +
+	"\bmodel_id\x18\x02 \x01(\tR\amodelId\x12\x12\n" +
+	"\x04text\x18\x03 \x01(\tR\x04text\x12\x1d\n" +
+	"\n" +
+	"input_path\x18\x04 \x01(\tR\tinputPath\x12;\n" +
+	"\x06params\x18\x05 \x03(\v2#.model.v1.InvokeRequest.ParamsEntryR\x06params\x1a9\n" +
+	"\vParamsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xbe\x01\n" +
+	"\x0eInvokeResponse\x12\x12\n" +
+	"\x04text\x18\x01 \x01(\tR\x04text\x12\x1f\n" +
+	"\voutput_path\x18\x02 \x01(\tR\n" +
+	"outputPath\x12<\n" +
+	"\x06detail\x18\x03 \x03(\v2$.model.v1.InvokeResponse.DetailEntryR\x06detail\x1a9\n" +
+	"\vDetailEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01*_\n" +
 	"\bModality\x12\x18\n" +
 	"\x14MODALITY_UNSPECIFIED\x10\x00\x12\x11\n" +
 	"\rMODALITY_TEXT\x10\x01\x12\x12\n" +
@@ -580,7 +746,7 @@ func file_model_v1_model_proto_rawDescGZIP() []byte {
 }
 
 var file_model_v1_model_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
-var file_model_v1_model_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_model_v1_model_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
 var file_model_v1_model_proto_goTypes = []any{
 	(Modality)(0),           // 0: model.v1.Modality
 	(Architecture)(0),       // 1: model.v1.Architecture
@@ -589,21 +755,28 @@ var file_model_v1_model_proto_goTypes = []any{
 	(*ModelDescriptor)(nil), // 4: model.v1.ModelDescriptor
 	(*ModelFamily)(nil),     // 5: model.v1.ModelFamily
 	(*ModelCatalog)(nil),    // 6: model.v1.ModelCatalog
+	(*InvokeRequest)(nil),   // 7: model.v1.InvokeRequest
+	(*InvokeResponse)(nil),  // 8: model.v1.InvokeResponse
+	nil,                     // 9: model.v1.InvokeRequest.ParamsEntry
+	nil,                     // 10: model.v1.InvokeResponse.DetailEntry
 }
 var file_model_v1_model_proto_depIdxs = []int32{
-	0, // 0: model.v1.ModelDescriptor.modality:type_name -> model.v1.Modality
-	1, // 1: model.v1.ModelDescriptor.architecture:type_name -> model.v1.Architecture
-	2, // 2: model.v1.ModelDescriptor.role:type_name -> model.v1.Role
-	3, // 3: model.v1.ModelDescriptor.provider:type_name -> model.v1.Provider
-	0, // 4: model.v1.ModelFamily.modality:type_name -> model.v1.Modality
-	2, // 5: model.v1.ModelFamily.role:type_name -> model.v1.Role
-	4, // 6: model.v1.ModelFamily.members:type_name -> model.v1.ModelDescriptor
-	5, // 7: model.v1.ModelCatalog.families:type_name -> model.v1.ModelFamily
-	8, // [8:8] is the sub-list for method output_type
-	8, // [8:8] is the sub-list for method input_type
-	8, // [8:8] is the sub-list for extension type_name
-	8, // [8:8] is the sub-list for extension extendee
-	0, // [0:8] is the sub-list for field type_name
+	0,  // 0: model.v1.ModelDescriptor.modality:type_name -> model.v1.Modality
+	1,  // 1: model.v1.ModelDescriptor.architecture:type_name -> model.v1.Architecture
+	2,  // 2: model.v1.ModelDescriptor.role:type_name -> model.v1.Role
+	3,  // 3: model.v1.ModelDescriptor.provider:type_name -> model.v1.Provider
+	0,  // 4: model.v1.ModelFamily.modality:type_name -> model.v1.Modality
+	2,  // 5: model.v1.ModelFamily.role:type_name -> model.v1.Role
+	4,  // 6: model.v1.ModelFamily.members:type_name -> model.v1.ModelDescriptor
+	5,  // 7: model.v1.ModelCatalog.families:type_name -> model.v1.ModelFamily
+	2,  // 8: model.v1.InvokeRequest.role:type_name -> model.v1.Role
+	9,  // 9: model.v1.InvokeRequest.params:type_name -> model.v1.InvokeRequest.ParamsEntry
+	10, // 10: model.v1.InvokeResponse.detail:type_name -> model.v1.InvokeResponse.DetailEntry
+	11, // [11:11] is the sub-list for method output_type
+	11, // [11:11] is the sub-list for method input_type
+	11, // [11:11] is the sub-list for extension type_name
+	11, // [11:11] is the sub-list for extension extendee
+	0,  // [0:11] is the sub-list for field type_name
 }
 
 func init() { file_model_v1_model_proto_init() }
@@ -617,7 +790,7 @@ func file_model_v1_model_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_model_v1_model_proto_rawDesc), len(file_model_v1_model_proto_rawDesc)),
 			NumEnums:      4,
-			NumMessages:   3,
+			NumMessages:   7,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

@@ -94,3 +94,29 @@ message ModelFamily {
 message ModelCatalog {
   repeated ModelFamily families = 1;
 }
+
+// InvokeRequest runs one model operation against a resolved provider, dispatched
+// by `role` (and `model_id` when a family has several members). The fields are a
+// uniform superset across capabilities -- each role reads only the ones it needs:
+// transcription reads `input_path` (an audio file); synthesis and text read
+// `text`. `params` carries role-specific knobs (e.g. a synthesis output path).
+// This is the on-the-wire form of one capability call; the provider fronts every
+// role through this single shape.
+message InvokeRequest {
+  Role role = 1;
+  string model_id = 2;              // family member to use; empty = the default
+  string text = 3;                  // text input (synthesis, text)
+  string input_path = 4;            // input file path (transcription audio)
+  map<string, string> params = 5;   // role-specific options
+}
+
+// InvokeResponse is the uniform result. Each role fills the fields it produces:
+// transcription and text return `text`; synthesis returns `output_path` (an audio
+// file it wrote). `detail` carries provenance/notes (e.g. the voice used). A
+// "busy" rejection is signaled at the transport (HTTP 429/503), never as a result
+// here -- completion is the caller's bento to own, not this message's to report.
+message InvokeResponse {
+  string text = 1;                  // text output (transcription, text)
+  string output_path = 2;           // output file path (synthesis audio)
+  map<string, string> detail = 3;   // provenance / notes
+}
