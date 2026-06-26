@@ -45,6 +45,13 @@ let package = Package(
             dependencies: ["Capabilities", "Contracts"],
             path: "apple-silicon/Sources/ProviderService"
         ),
+        // The daemon: assembles the real capabilities behind one arbiter and serves them
+        // over loopback HTTP. Thin -- it wires Capabilities + ProviderService together.
+        .executableTarget(
+            name: "provider",
+            dependencies: ["Capabilities", "ProviderService"],
+            path: "apple-silicon/Sources/provider"
+        ),
         .testTarget(
             name: "CapabilitiesTests",
             dependencies: ["Capabilities"],

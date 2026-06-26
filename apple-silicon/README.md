@@ -15,8 +15,10 @@ wrapper *call* it. There is no standalone CLI — this is a machine-first compon
   transcription/synthesis, with a `Router` that dispatches by role and sheds BUSY.
 - [x] **Contracts wired** — `model.v1` `Invoke` messages + a Swift `Codable` emitter
   (`gen/swift`); the `ProviderService` adapter maps `InvokeRequest` ⟷ the capability core.
-- [ ] **HTTP transport** — a `Network.framework` daemon serving `model.v1` protojson +
-  `/health` (a thin executable that calls `ProviderService`).
+- [x] **HTTP transport** — a `Network.framework` daemon (`provider`) serving `POST
+  /invoke` (model.v1 protojson) + `GET /health` over loopback; the thin executable wires
+  the real capabilities behind the arbiter. Env: `PROVIDER_PORT` (8077),
+  `PROVIDER_CAPACITY` (2).
 - [ ] **Discovery** — announce a `sidecar.v1.SidecarDescriptor`; delightd's poll picks it up.
 - [ ] **Text capability** — add the on-device foundation model (text→text) to the arbiter.
 
