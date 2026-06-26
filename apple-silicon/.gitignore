@@ -1,0 +1,4 @@
+# SwiftPM build + local tooling artifacts stay out of git.
+.build/
+.swiftpm/
+*.o
