@@ -117,7 +117,7 @@ func stamp() -> String {
 
 @available(macOS 26.0, *)
 public actor Arbiter {
-    public enum Outcome: Sendable { case done(summary: String, wall: Double); case busy; case failed(String) }
+    public enum Outcome: Sendable { case done(result: CapabilityResult, wall: Double); case busy; case failed(String) }
 
     public let capacity: Int           // max admitted at once (running + queued)
     private var admitted = 0
@@ -151,7 +151,7 @@ public actor Arbiter {
             let res = try await work()
             let wall = Date().timeIntervalSince(t)
             print("  [\(stamp())] DONE   \(label)  \(res.summary) wall=\(String(format: "%.1f", wall))s")
-            return .done(summary: res.summary, wall: wall)
+            return .done(result: res, wall: wall)
         } catch {
             print("  [\(stamp())] FAIL   \(label)  \(error)")
             return .failed("\(error)")
