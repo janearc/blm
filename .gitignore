@@ -11,8 +11,13 @@ __pycache__/
 .env
 .venv/
 
-# built protoc plugin (use `go install ./cmd/protoc-gen-fsm`)
+# built protoc plugins (use `go install ./cmd/...`)
 /protoc-gen-fsm
+/protoc-gen-swift-codable
+
+# swift package build artifacts (Package.swift is at the repo root)
+.build/
+.swiftpm/
 
 # python build artifacts
 dist/
