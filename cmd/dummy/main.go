@@ -1,16 +1,21 @@
-// Command dummy is good-citizen's reference service. It is two things at once:
-// the canonical example a new citizen copies, and the harness we prove
-// emit/consume with -- so a new good-citizen release is validated against the
-// dummy, never against a production service (delightd, paling, ...). It has its
-// own service id so its heartbeats and events are distinguishable on the bus.
+// Command dummy is good-citizen's reference service and its release gate: a new
+// good-citizen release is proven against the dummy, never against a production service
+// (delightd, paling, ...). It has its own service id so its heartbeats and events are
+// distinguishable on the bus.
 //
-// It does the minimum a citizen does: emit a heartbeat, watch an inbox, and
-// react to new files (here, just log them; a real citizen would process them).
-// Kafka is best-effort -- with no broker reachable it runs with emission off.
+// dummy is the executable spec every citizen is modeled on. It does the full citizen
+// loop: emit a heartbeat, watch an inbox, and -- for each new input -- drive a
+// SYNTHETIC bento through the generated bento FSM, emitting a BentoLifecycleEvent on
+// every transition (NOTICED -> COOK -> DONE). The work is synthetic (the handlers just
+// transition); what is real is the FSM dispatch and the emit, which is exactly what a
+// release must prove. Kafka is best-effort -- with no broker reachable it drives the
+// FSM and logs, with emission off.
 package main
 
 import (
 	"context"
+	"crypto/rand"
+	"fmt"
 	"log/slog"
 	"os"
 	"os/signal"
@@ -20,19 +25,103 @@ import (
 
 	"github.com/janearc/blm/citizen"
 	"github.com/janearc/blm/emit"
+	bentov1 "github.com/janearc/blm/gen/go/bento/v1"
+	bentoproto "github.com/janearc/blm/proto/bento/v1"
 	observabilityproto "github.com/janearc/blm/proto/observability/v1"
 	"github.com/janearc/blm/watcher"
 )
 
-// serviceID is the dummy's identity on the bus -- deliberately not a real
-// service name, so its telemetry never masquerades as a production citizen's.
-const serviceID = "good-citizen-dummy"
+const (
+	// serviceID is the dummy's identity on the bus -- deliberately not a real service
+	// name, so its telemetry never masquerades as a production citizen's.
+	serviceID = "good-citizen-dummy"
+
+	topicBentoEvents = "bento.events"
+	subjectBento     = "bento.v1.BentoLifecycleEvent"
+	bentoKind        = "dummy"
+)
 
 func getenv(key, def string) string {
 	if v := os.Getenv(key); v != "" {
 		return v
 	}
 	return def
+}
+
+// newID returns a uuid4 -- the lifecycle event's idempotency key.
+func newID() string {
+	var b [16]byte
+	_, _ = rand.Read(b[:])
+	b[6] = (b[6] & 0x0f) | 0x40
+	b[8] = (b[8] & 0x3f) | 0x80
+	return fmt.Sprintf("%x-%x-%x-%x-%x", b[0:4], b[4:6], b[6:8], b[8:10], b[10:16])
+}
+
+// handlers binds synthetic behavior to the bento FSM: each state transitions to the
+// next, which is enough to drive a bento through the lifecycle and exercise the
+// generated dispatch + emit. A real citizen does work here; the dummy proves the path.
+type handlers struct{ log *slog.Logger }
+
+func (h handlers) OnNoticed(_ context.Context, b *bentov1.Bento) (bentov1.BentoState, error) {
+	h.log.Info("dummy: noticed", "bento", b.GetId())
+	return bentov1.BentoState_BENTO_STATE_COOK, nil
+}
+
+func (h handlers) OnCook(_ context.Context, b *bentov1.Bento) (bentov1.BentoState, error) {
+	h.log.Info("dummy: cooking", "bento", b.GetId())
+	return bentov1.BentoState_BENTO_STATE_DONE, nil
+}
+
+func (h handlers) OnPartial(_ context.Context, b *bentov1.Bento) (bentov1.BentoState, error) {
+	return bentov1.BentoState_BENTO_STATE_DONE, nil
+}
+
+func (h handlers) OnDone(_ context.Context, b *bentov1.Bento) (bentov1.BentoState, error) {
+	h.log.Info("dummy: done", "bento", b.GetId())
+	return bentov1.BentoState_BENTO_STATE_UNSPECIFIED, nil // terminal
+}
+
+func (h handlers) OnFailed(_ context.Context, b *bentov1.Bento) (bentov1.BentoState, error) {
+	h.log.Error("dummy: failed", "bento", b.GetId())
+	return bentov1.BentoState_BENTO_STATE_UNSPECIFIED, nil // terminal
+}
+
+// busEmitter publishes a BentoLifecycleEvent on each transition. A nil publisher is a
+// no-op (best-effort), so the FSM still drives with the bus down.
+type busEmitter struct {
+	pub *emit.Publisher
+	log *slog.Logger
+}
+
+func (e busEmitter) EmitLifecycle(ctx context.Context, b *bentov1.Bento, st bentov1.BentoState) error {
+	ev := &bentov1.BentoLifecycleEvent{
+		EventId:   newID(),
+		TraceId:   b.GetId(),
+		BentoId:   b.GetId(),
+		BentoKind: b.GetKind(),
+		State:     st,
+		Handler:   serviceID,
+	}
+	e.log.Info("dummy: emit", "bento", b.GetId(), "state", st)
+	return e.pub.Publish(ctx, topicBentoEvents, subjectBento, bentoproto.Schema, b.GetId(), ev)
+}
+
+// drive walks one synthetic bento from NOTICED through the FSM until a handler returns
+// the terminal state, one Step at a time -- proving the generated dispatch + emit.
+func drive(ctx context.Context, h handlers, e busEmitter, log *slog.Logger, name string) {
+	b := &bentov1.Bento{Id: newID(), Name: name, Kind: bentoKind, State: bentov1.BentoState_BENTO_STATE_NOTICED}
+	log.Info("dummy: driving synthetic bento", "bento", b.GetId(), "trigger", name)
+	for {
+		prev := b.GetState()
+		if err := bentov1.Step(ctx, h, e, b); err != nil {
+			log.Error("dummy: step failed", "bento", b.GetId(), "err", err)
+			return
+		}
+		if b.GetState() == prev { // terminal: handler returned UNSPECIFIED
+			break
+		}
+	}
+	log.Info("dummy: synthetic bento finished", "bento", b.GetId(), "final", b.GetState())
 }
 
 func main() {
@@ -45,8 +134,7 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	// Emission is best-effort: a down broker disables it but never stops the
-	// service -- the same stance every citizen takes.
+	// emission is best-effort: a down broker disables it but never stops the service.
 	var pub *emit.Publisher
 	if p, err := emit.New(ctx, brokers, srURL); err != nil {
 		log.Warn("kafka emission disabled", "err", err)
@@ -57,11 +145,14 @@ func main() {
 		go citizen.Heartbeat(ctx, pub, serviceID, observabilityproto.Schema, 15*time.Second, log)
 	}
 
-	// Watch the inbox for new files and react. A real citizen would process the
-	// file and emit a domain event; the dummy just logs, which is enough to prove
-	// the watch loop end to end.
+	h := handlers{log: log}
+	e := busEmitter{pub: pub, log: log}
+
+	// watch the inbox; each new input drives a synthetic bento through the FSM.
 	w := watcher.New(watcher.NewFilesOracle(inbox), 5*time.Second, func(ctx context.Context, r watcher.Result) error {
-		log.Info("new inputs detected", "count", len(r.Items), "items", r.Items)
+		for _, item := range r.Items {
+			drive(ctx, h, e, log, item)
+		}
 		return nil
 	}, log)
 	go w.Run(ctx)
