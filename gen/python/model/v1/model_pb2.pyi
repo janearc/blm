@@ -30,6 +30,7 @@ class Role(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
     ROLE_TRANSCRIPTION: _ClassVar[Role]
     ROLE_AUDIO_ANNOTATION: _ClassVar[Role]
     ROLE_IMAGE_GENERATION: _ClassVar[Role]
+    ROLE_SPEECH_SYNTHESIS: _ClassVar[Role]
 
 class Provider(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
     __slots__ = ()
@@ -39,6 +40,7 @@ class Provider(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
     PROVIDER_OPENAI_COMPATIBLE: _ClassVar[Provider]
     PROVIDER_ANTHROPIC: _ClassVar[Provider]
     PROVIDER_COMFYUI: _ClassVar[Provider]
+    PROVIDER_APPLE_ON_DEVICE: _ClassVar[Provider]
 MODALITY_UNSPECIFIED: Modality
 MODALITY_TEXT: Modality
 MODALITY_AUDIO: Modality
@@ -54,12 +56,14 @@ ROLE_EMBEDDING: Role
 ROLE_TRANSCRIPTION: Role
 ROLE_AUDIO_ANNOTATION: Role
 ROLE_IMAGE_GENERATION: Role
+ROLE_SPEECH_SYNTHESIS: Role
 PROVIDER_UNSPECIFIED: Provider
 PROVIDER_OLLAMA: Provider
 PROVIDER_IN_PROCESS: Provider
 PROVIDER_OPENAI_COMPATIBLE: Provider
 PROVIDER_ANTHROPIC: Provider
 PROVIDER_COMFYUI: Provider
+PROVIDER_APPLE_ON_DEVICE: Provider
 
 class ModelDescriptor(_message.Message):
     __slots__ = ("name", "modality", "architecture", "role", "provider", "endpoint", "model_id", "auth_secret")

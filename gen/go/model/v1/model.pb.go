@@ -146,6 +146,7 @@ const (
 	Role_ROLE_TRANSCRIPTION    Role = 4 // audio -> text (whisper)
 	Role_ROLE_AUDIO_ANNOTATION Role = 5 // audio + prompt -> text (Qwen2-Audio)
 	Role_ROLE_IMAGE_GENERATION Role = 6 // prompt/params -> image (in-process diffusion model)
+	Role_ROLE_SPEECH_SYNTHESIS Role = 7 // text -> audio (speech synthesizer + personal voice)
 )
 
 // Enum value maps for Role.
@@ -158,6 +159,7 @@ var (
 		4: "ROLE_TRANSCRIPTION",
 		5: "ROLE_AUDIO_ANNOTATION",
 		6: "ROLE_IMAGE_GENERATION",
+		7: "ROLE_SPEECH_SYNTHESIS",
 	}
 	Role_value = map[string]int32{
 		"ROLE_UNSPECIFIED":      0,
@@ -167,6 +169,7 @@ var (
 		"ROLE_TRANSCRIPTION":    4,
 		"ROLE_AUDIO_ANNOTATION": 5,
 		"ROLE_IMAGE_GENERATION": 6,
+		"ROLE_SPEECH_SYNTHESIS": 7,
 	}
 )
 
@@ -209,6 +212,10 @@ const (
 	Provider_PROVIDER_OPENAI_COMPATIBLE Provider = 3 // any OpenAI-API-shaped endpoint
 	Provider_PROVIDER_ANTHROPIC         Provider = 4 // remote, authenticated (key via secretKeyRef)
 	Provider_PROVIDER_COMFYUI           Provider = 5 // image workflow engine (a "model" is a workflow)
+	// host-local Swift provider fronting the on-device Apple frameworks. One
+	// transport per host; `role` + `model_id` disambiguate the framework
+	// (transcription / text / synthesis) rather than minting a provider per kind.
+	Provider_PROVIDER_APPLE_ON_DEVICE Provider = 6
 )
 
 // Enum value maps for Provider.
@@ -220,6 +227,7 @@ var (
 		3: "PROVIDER_OPENAI_COMPATIBLE",
 		4: "PROVIDER_ANTHROPIC",
 		5: "PROVIDER_COMFYUI",
+		6: "PROVIDER_APPLE_ON_DEVICE",
 	}
 	Provider_value = map[string]int32{
 		"PROVIDER_UNSPECIFIED":       0,
@@ -228,6 +236,7 @@ var (
 		"PROVIDER_OPENAI_COMPATIBLE": 3,
 		"PROVIDER_ANTHROPIC":         4,
 		"PROVIDER_COMFYUI":           5,
+		"PROVIDER_APPLE_ON_DEVICE":   6,
 	}
 )
 
@@ -537,7 +546,7 @@ const file_model_v1_model_proto_rawDesc = "" +
 	"\x18ARCHITECTURE_UNSPECIFIED\x10\x00\x12\x18\n" +
 	"\x14ARCHITECTURE_DECODER\x10\x01\x12 \n" +
 	"\x1cARCHITECTURE_ENCODER_DECODER\x10\x02\x12\x18\n" +
-	"\x14ARCHITECTURE_ENCODER\x10\x03*\xa2\x01\n" +
+	"\x14ARCHITECTURE_ENCODER\x10\x03*\xbd\x01\n" +
 	"\x04Role\x12\x14\n" +
 	"\x10ROLE_UNSPECIFIED\x10\x00\x12\r\n" +
 	"\tROLE_CHAT\x10\x01\x12\x13\n" +
@@ -545,14 +554,16 @@ const file_model_v1_model_proto_rawDesc = "" +
 	"\x0eROLE_EMBEDDING\x10\x03\x12\x16\n" +
 	"\x12ROLE_TRANSCRIPTION\x10\x04\x12\x19\n" +
 	"\x15ROLE_AUDIO_ANNOTATION\x10\x05\x12\x19\n" +
-	"\x15ROLE_IMAGE_GENERATION\x10\x06*\xa0\x01\n" +
+	"\x15ROLE_IMAGE_GENERATION\x10\x06\x12\x19\n" +
+	"\x15ROLE_SPEECH_SYNTHESIS\x10\a*\xbe\x01\n" +
 	"\bProvider\x12\x18\n" +
 	"\x14PROVIDER_UNSPECIFIED\x10\x00\x12\x13\n" +
 	"\x0fPROVIDER_OLLAMA\x10\x01\x12\x17\n" +
 	"\x13PROVIDER_IN_PROCESS\x10\x02\x12\x1e\n" +
 	"\x1aPROVIDER_OPENAI_COMPATIBLE\x10\x03\x12\x16\n" +
 	"\x12PROVIDER_ANTHROPIC\x10\x04\x12\x14\n" +
-	"\x10PROVIDER_COMFYUI\x10\x05B\x8b\x01\n" +
+	"\x10PROVIDER_COMFYUI\x10\x05\x12\x1c\n" +
+	"\x18PROVIDER_APPLE_ON_DEVICE\x10\x06B\x8b\x01\n" +
 	"\fcom.model.v1B\n" +
 	"ModelProtoP\x01Z.github.com/janearc/blm/gen/go/model/v1;modelv1\xa2\x02\x03MXX\xaa\x02\bModel.V1\xca\x02\bModel\\V1\xe2\x02\x14Model\\V1\\GPBMetadata\xea\x02\tModel::V1b\x06proto3"
 

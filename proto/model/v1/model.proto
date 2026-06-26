@@ -34,6 +34,7 @@ enum Role {
   ROLE_TRANSCRIPTION = 4;      // audio -> text (whisper)
   ROLE_AUDIO_ANNOTATION = 5;   // audio + prompt -> text (Qwen2-Audio)
   ROLE_IMAGE_GENERATION = 6;   // prompt/params -> image (in-process diffusion model)
+  ROLE_SPEECH_SYNTHESIS = 7;   // text -> audio (speech synthesizer + personal voice)
 }
 
 // Provider is the transport that serves the model. The end state fronts most of
@@ -46,6 +47,10 @@ enum Provider {
   PROVIDER_OPENAI_COMPATIBLE = 3;  // any OpenAI-API-shaped endpoint
   PROVIDER_ANTHROPIC = 4;          // remote, authenticated (key via secretKeyRef)
   PROVIDER_COMFYUI = 5;            // image workflow engine (a "model" is a workflow)
+  // host-local Swift provider fronting the on-device Apple frameworks. One
+  // transport per host; `role` + `model_id` disambiguate the framework
+  // (transcription / text / synthesis) rather than minting a provider per kind.
+  PROVIDER_APPLE_ON_DEVICE = 6;
 }
 
 // ModelDescriptor is the resolved identity of one model. Resolution maps a

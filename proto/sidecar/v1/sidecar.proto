@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+// Package sidecar.v1 is the descriptor a host-local sidecar announces itself
+// with. A sidecar is a small companion process that fronts a wire or a
+// capability a pipeline shouldn't touch directly. The Apple on-device capability
+// provider is one: it registers a SidecarDescriptor with delightd and exposes its
+// models as model.v1.ModelDescriptors. That descriptor pair is the sidecar's
+// entire public surface -- pipelines depend on it, never on the sidecar's
+// internals, never link its language.
+package sidecar.v1;
+
+// Capability is what a sidecar fronts. Only MODEL is defined today (the on-device
+// provider serving inference); other kinds are added as additive enum values when
+// a real one arrives.
+enum Capability {
+  CAPABILITY_UNSPECIFIED = 0;
+  CAPABILITY_MODEL = 1;   // fronts model capability (e.g. Apple on-device)
+}
+
+// Language is the runtime the sidecar is implemented in. It tells the fleet which
+// toolchain owns the process, never how to call it -- the endpoint and the
+// model.v1 descriptors do that. These are the languages the fleet is built in;
+// the on-device provider is SWIFT.
+enum Language {
+  LANGUAGE_UNSPECIFIED = 0;
+  LANGUAGE_SWIFT = 1;
+  LANGUAGE_GO = 2;
+  LANGUAGE_PYTHON = 3;
+}
+
+// SidecarDescriptor is how a sidecar announces itself to discovery. The Apple
+// on-device provider sets capability=MODEL, language=SWIFT, an endpoint that
+// serves model.v1 operations as protojson over local HTTP, and a health_path.
+message SidecarDescriptor {
+  string name = 1;          // logical sidecar name, e.g. "apple-on-device"
+  Capability capability = 2;
+  Language language = 3;
+  string endpoint = 4;      // base URL the sidecar serves (protojson over HTTP)
+  string health_path = 5;   // path under endpoint reporting health, e.g. "/health"
+}
