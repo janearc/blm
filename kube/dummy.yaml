@@ -1,0 +1,93 @@
+# =============================================================================
+# good-citizen-dummy -- the reference citizen, run as a standing liveness canary
+# =============================================================================
+# blm #42 (deploy); the dummy spec is epic #16 P4.
+#
+# The dummy is good-citizen's executable spec and release gate: it drives a
+# synthetic bento through the generated FSM and emits the full lifecycle on the
+# bus. Here it runs as a STANDING canary rather than a one-shot CI gate:
+#
+#   - it heartbeats GREEN continuously ("aggressively healthy" -- citizen.Heartbeat
+#     is hardcoded HEALTH_STATE_GREEN), so the mesh always has a known-good citizen
+#     on observability.events to check liveness/telemetry against;
+#   - its inbox starts EMPTY, so it drives no synthetic bentos and stays off
+#     bento.events -- a standing canary must not crowd the bus. Someone exercising
+#     the mesh "rolls" the dummy by dropping a file in the inbox below.
+#
+# A pure worker: no HTTP surface, so no Service, no IngressRoute, and no httpGet
+# probes (there is no endpoint to probe). Its liveness signal IS the heartbeat on
+# the bus, observed by obs-svc -- deliberately not a kube health check.
+# -----------------------------------------------------------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: good-citizen-dummy
+  namespace: fleet
+  labels:
+    app.kubernetes.io/name: good-citizen-dummy
+    app.kubernetes.io/part-of: fleet
+    app.kubernetes.io/component: dummy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: good-citizen-dummy
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: good-citizen-dummy
+        app.kubernetes.io/part-of: fleet
+        app.kubernetes.io/component: dummy
+    spec:
+      # fsGroup makes the inbox emptyDir group-owned by the non-root runtime user
+      # so it can read (and a roller can write) the watched directory.
+      securityContext:
+        fsGroup: 65532
+      containers:
+        - name: good-citizen-dummy
+          # Locally-built image, pinned to an explicit tag (never :latest): build
+          # and import this exact tag into k3d so the kubelet uses the cached
+          # image and never reaches a registry:
+          #   docker build -t good-citizen-dummy:v1 -f cmd/dummy/Dockerfile .
+          #   k3d image import good-citizen-dummy:v1 -c fleet
+          # Bump the tag deliberately when cmd/dummy changes; do not float it.
+          image: good-citizen-dummy:v1
+          # Image is local-only; never let the kubelet attempt a registry pull --
+          # it would fail and waste the throttled link.
+          imagePullPolicy: IfNotPresent
+          env:
+            # Best-effort bus: if these are unreachable the dummy still runs and
+            # logs, emission just disables (never fatal). In-cluster service names;
+            # these match cmd/dummy's own defaults but are set explicitly so the
+            # wiring is visible.
+            - name: KAFKA_BROKERS
+              value: kafka:9092
+            - name: SCHEMA_REGISTRY_URL
+              value: http://schema-registry:8081
+            # The watched inbox sits on the emptyDir below so the path exists and
+            # is writable. Empty inbox => no synthetic bentos => quiet bus, until
+            # someone rolls the dummy by dropping a file here.
+            - name: DUMMY_INBOX
+              value: /var/lib/good-citizen-dummy/inbox
+          volumeMounts:
+            - name: inbox
+              mountPath: /var/lib/good-citizen-dummy/inbox
+          resources:
+            # Modest -- a 5s poll loop, a Kafka client, and a 15s heartbeat on a
+            # laptop cluster.
+            requests:
+              cpu: 25m
+              memory: 32Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            runAsUser: 65532
+            capabilities:
+              drop:
+                - ALL
+      volumes:
+        - name: inbox
+          emptyDir: {}
