@@ -37,9 +37,10 @@ enum Role {
   ROLE_SPEECH_SYNTHESIS = 7;   // text -> audio (speech synthesizer + personal voice)
 }
 
-// Provider is the transport that serves the model. The end state fronts most of
-// these through the model-svc gateway; ollama and in-process are today's direct
-// transports, and anthropic (et al.) are the remote, authenticated providers.
+// Provider is the transport that serves the model. delightd hosts and reconciles
+// these (see delightd/docs/model-hosting.md); ollama and in-process are direct
+// transports, anthropic (et al.) are remote and authenticated, and the OpenAI gateway
+// (LiteLLM) is one transport under model.v1, not the front door.
 enum Provider {
   PROVIDER_UNSPECIFIED = 0;
   PROVIDER_OLLAMA = 1;             // decoder chat/completion over /api/generate
