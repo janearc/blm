@@ -110,8 +110,8 @@ func (c *Client) Generate(ctx context.Context, name, prompt string, timeout time
 		return c.ollamaGenerate(ctx, d, prompt, timeout)
 	default:
 		// in-process (MLX/transformers), anthropic, openai-compatible: the Python
-		// client owns in-process today; remote providers land with the model-svc
-		// gateway. Surface clearly rather than pretend.
+		// client owns in-process today; remote providers land with the delightd-hosted
+		// transports (delightd/docs/model-hosting.md). Surface clearly rather than pretend.
 		return "", fmt.Errorf("provider %s not yet supported by the Go client", d.Provider.String())
 	}
 }

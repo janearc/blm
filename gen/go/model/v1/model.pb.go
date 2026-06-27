@@ -200,9 +200,10 @@ func (Role) EnumDescriptor() ([]byte, []int) {
 	return file_model_v1_model_proto_rawDescGZIP(), []int{2}
 }
 
-// Provider is the transport that serves the model. The end state fronts most of
-// these through the model-svc gateway; ollama and in-process are today's direct
-// transports, and anthropic (et al.) are the remote, authenticated providers.
+// Provider is the transport that serves the model. delightd hosts and reconciles
+// these (see delightd/docs/model-hosting.md); ollama and in-process are direct
+// transports, anthropic (et al.) are remote and authenticated, and the OpenAI gateway
+// (LiteLLM) is one transport under model.v1, not the front door.
 type Provider int32
 
 const (
