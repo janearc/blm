@@ -31,35 +31,30 @@ def drive(handlers, bento, sidecar_url=None) -> Manifest | None:
     # raises on a FAILED bento -- a daemon logs the outcome and stays up for the next file.
     # an unexpected exception still propagates so the watcher's per-file guard can catch it.
     pb = _pb(bento)
-    _walk(handlers, pb, _emit.sidecar_emitter(sidecar_url))
+    # the emitter closes over the handler so a FAILED event carries error_message + trace_id.
+    _walk(handlers, pb, _emit.sidecar_emitter(sidecar_url, handlers))
     return handlers.manifest
 
 
 # --- the inbox daemon -------------------------------------------------------------
 
-def serve_inbox(
-    inbox,
-    make_handlers,
-    make_bento,
-    *,
-    suffixes=None,
-    sidecar_url=None,
-    interval=5.0,
-) -> None:
-    # watch `inbox`, and for each new file build a bento (make_bento(path) -> BirbBento in
-    # NOTICED) and drive it to terminal with the real sidecar emit. make_handlers() -> a
-    # fresh BirbHandlers per file. dup-over-loss is preserved: the watcher never moves or
-    # deletes the source, and on_noticed COPIES it into the bento.
-    def _handle(path):
-        bento = make_bento(Path(path))
-        manifest = drive(make_handlers(), bento, sidecar_url=sidecar_url)
+def serve_inbox(provider, make_handlers, make_bento, *, sidecar_url=None, interval=5.0) -> None:
+    # watch `provider` for new sources; for each, build a bento (make_bento(source) ->
+    # BirbBento in NOTICED), wire the SAME provider into the handler (so its writes and the
+    # terminal notify land at the configured sink), and drive it to terminal with the real
+    # sidecar emit. make_handlers() -> a fresh BirbHandlers per source. dup-over-loss and the
+    # persistent, restart-surviving dedup are the provider's job.
+    def _handle(source):
+        bento = make_bento(source)
+        handlers = make_handlers()
+        handlers.io = provider
+        manifest = drive(handlers, bento, sidecar_url=sidecar_url)
         if manifest is not None:
             logger.info(
-                "birblib: %s -> %s (ok=%s)",
-                Path(path).name, manifest.artifact, manifest.ok,
+                "birblib: %s -> %s (ok=%s)", source.name, manifest.artifact, manifest.ok,
             )
 
-    watcher.watch(inbox, _handle, suffixes=suffixes, interval=interval)
+    watcher.watch(provider, _handle, interval=interval)
 
 
 # --- the HTTP surface (async submit + poll + artifact serving) --------------------
@@ -83,7 +78,7 @@ def _safe_artifact_path(bentos_root, bento_id: str, name: str) -> Path | None:
     return target
 
 
-def build_app(*, name, bentos_root, make_handlers, make_bento, sidecar_url=None):
+def build_app(*, name, bentos_root, make_handlers, make_bento, sidecar_url=None, provider=None):
     # build the birb's HTTP app: /health, 202 submit (POST /jobs) + poll (GET /jobs/{id}),
     # and artifact serving with the traversal guard.
     #
@@ -114,9 +109,11 @@ def build_app(*, name, bentos_root, make_handlers, make_bento, sidecar_url=None)
         # fleet path replaces the thread with a NOTICED emit a bus worker consumes.
         bento = make_bento(request)
         bento_id = bento.pb.id
-        bento.scaffold()
-        bento.persist()
         handlers = make_handlers()
+        if provider is not None:
+            handlers.io = provider
+        bento.scaffold()
+        bento.persist(handlers.io)
 
         def _run():
             try:

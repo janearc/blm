@@ -34,17 +34,27 @@ def emit(event, sidecar_url=None):
         log.warning("good_citizen: emit to sidecar failed, dropped: %s", e)
 
 
-def sidecar_emitter(sidecar_url=None):
-    # build an Emitter for the generated fsm harness: step() calls emitter(b, state)
-    # on each transition, and this relays a BentoLifecycleEvent to the sidecar. event_id
-    # is a fresh uuid4 (the idempotency key); the bento carries its own id and kind.
+def sidecar_emitter(sidecar_url=None, handler=None):
+    # build an Emitter for the generated fsm harness: step() calls emitter(b, state) on each
+    # transition, and this relays a BentoLifecycleEvent to the sidecar. event_id is a fresh
+    # uuid4 (the idempotency key); the bento carries its own id and kind.
+    #
+    # the failure REASON lives on the HANDLER, not the bento, so the emitter closes over the
+    # handler to populate error_message on a FAILED event -- without this, a FAILED bento's
+    # bus event carried no error and there was no provenance/correlation. trace_id correlates
+    # one bento's processing; the bento has no trace field yet, so trace_id == bento_id for
+    # now (a bento's events share its id as the trace until a real trace field lands).
     def _emit(b, state):
         ev = bento_pb2.BentoLifecycleEvent(
             event_id=str(uuid.uuid4()),
+            trace_id=b.id,
             bento_id=b.id,
             bento_kind=b.kind,
             state=state,
+            handler=type(handler).__name__ if handler is not None else "",
         )
+        if state == bento_pb2.BENTO_STATE_FAILED and handler is not None:
+            ev.error_message = getattr(handler, "error", "") or ""
         emit(ev, sidecar_url)
 
     return _emit

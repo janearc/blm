@@ -147,24 +147,22 @@ class BirbBento:
         self.pb.banchans.append(ban)
         return ban
 
-    # --- persistence ----------------------------------------------------------
-    def persist(self) -> None:
-        # write the bento itself to root/bento.json as protojson -- the on-disk SOT for
-        # the standalone path. the bus is the SOT in the mesh; this is its local mirror,
-        # so a run is recoverable from disk without the bus.
-        if self.root.is_dir():
-            self.bento_path.write_text(json_format.MessageToJson(self.pb))
+    # --- persistence (all writes route through the provider, atomically) ------
+    def persist(self, io) -> None:
+        # write the bento itself to root/bento.json as protojson -- the on-disk SOT for the
+        # standalone path. the bus is the SOT in the mesh; this is its local mirror, so a run
+        # is recoverable from disk without the bus. the write goes through the provider, so
+        # it is atomic (a poll never sees a half-written bento) and the sink is swappable.
+        io.write(str(self.bento_path), json_format.MessageToJson(self.pb))
 
-    def write_request(self, request: dict) -> None:
+    def write_request(self, request: dict, io) -> None:
         # archive the resolved request the run was built from, next to the source.
-        self.raw_dir.mkdir(parents=True, exist_ok=True)
-        self.request_path.write_text(json.dumps(request, indent=2))
+        io.write(str(self.request_path), json.dumps(request, indent=2))
 
-    def write_manifest(self, manifest: "Manifest") -> None:
-        # the manifest is the answer to "where is the result, and did it work" -- written
-        # next to the outputs so a reader finds it without the bus.
-        if self.root.is_dir():
-            self.manifest_path.write_text(json.dumps(manifest.to_dict(), indent=2))
+    def write_manifest(self, manifest: "Manifest", io) -> None:
+        # the manifest is the answer to "where is the result, and did it work" -- written at
+        # the sink a consumer expects, so a reader finds it without the bus.
+        io.write(str(self.manifest_path), json.dumps(manifest.to_dict(), indent=2))
 
     # --- the manifest envelope (the one canonical shape, §3.2) -----------------
     def manifest(

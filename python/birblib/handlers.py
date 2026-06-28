@@ -17,6 +17,7 @@ from pathlib import Path
 
 from bento.v1 import bento_pb2
 from good_citizen import fsm
+from good_citizen.provider import FilesystemProvider
 
 from birblib.bento import BirbBento, Manifest
 
@@ -57,6 +58,10 @@ class BirbHandlers(fsm.Handlers):
         self.detail: dict = {}
         self.manifest: Manifest | None = None
         self.error: str = ""
+        # the I/O provider every write + the terminal notify route through. defaults to the
+        # filesystem; the daemon injects a configured provider (e.g. one with a notify_dir a
+        # phone-synced folder watches). swapping the sink is a provider swap, not a code one.
+        self.io = FilesystemProvider()
 
     # --- the ONE method a birb implements -------------------------------------
     def cook(self, b: bento_pb2.Bento) -> CookResult:
@@ -99,8 +104,8 @@ class BirbHandlers(fsm.Handlers):
             shutil.copy2(src, archived)
             ban.location = str(archived)
         # archive the resolved request (C3) and persist the bento as the on-disk SOT.
-        bento.write_request(self.request(bento))
-        bento.persist()
+        bento.write_request(self.request(bento), self.io)
+        bento.persist(self.io)
         return bento_pb2.BENTO_STATE_COOK
 
     def on_cook(self, b: bento_pb2.Bento) -> int:
@@ -116,7 +121,18 @@ class BirbHandlers(fsm.Handlers):
             self._finalize(bento, bento_pb2.BENTO_STATE_FAILED)
             return bento_pb2.BENTO_STATE_FAILED
         self.detail = dict(result.detail or {})
-        if result.artifact is not None and self.artifact_banchan:
+        if result.artifact is None:
+            # never a silent no-output: a run that produced NO artifact (the input was
+            # rejected, the result was empty) is a VISIBLE non-success, not a silent DONE.
+            # the manifest invariant (ok == state==DONE) means a no-artifact run cannot be
+            # DONE, so it terminates FAILED with the reason -- and _finalize still writes the
+            # manifest at the sink and notifies. (BENTO_STATE_SPOILED is the natural home for
+            # "rejected", but it is reserved/unwired in the proto; FAILED is the honest term
+            # today. See the open decision in the PR.)
+            self.error = self.detail.get("reason") or "no artifact produced (input rejected/empty)"
+            self._finalize(bento, bento_pb2.BENTO_STATE_FAILED)
+            return bento_pb2.BENTO_STATE_FAILED
+        if self.artifact_banchan:
             bento.add(self.artifact_banchan, kind="output", location=result.artifact)
         state = bento_pb2.BENTO_STATE_DONE if result.ok else bento_pb2.BENTO_STATE_PARTIAL
         self._finalize(bento, state)
@@ -158,4 +174,8 @@ class BirbHandlers(fsm.Handlers):
             stats=self.stats,
             detail=detail,
         )
-        bento.write_manifest(self.manifest)
+        # never-silent: the ONE place a bento goes terminal writes the manifest at the sink
+        # AND notifies -- on DONE, on FAILED, and on a zero-artifact reject alike. no terminal
+        # path reaches rest without both. (grep-proof: _finalize is the only manifest writer.)
+        bento.write_manifest(self.manifest, self.io)
+        self.io.notify(self.manifest.to_dict())

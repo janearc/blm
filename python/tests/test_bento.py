@@ -5,6 +5,10 @@ import json
 from bento.v1 import bento_pb2
 
 from birblib.bento import BirbBento, Manifest, state_name
+from good_citizen.provider import FilesystemProvider
+
+# writes route through a provider now; the filesystem one is the default everywhere.
+_IO = FilesystemProvider()
 
 
 def _new(tmp_path, **kw):
@@ -55,7 +59,7 @@ def test_persist_writes_bento_protojson(tmp_path):
     # the on-disk SOT: the bento itself, as protojson, recoverable without the bus.
     b = _new(tmp_path, name="memo", banchans=[("src", "source", "/tmp/x")])
     b.scaffold()
-    b.persist()
+    b.persist(_IO)
     on_disk = json.loads(b.bento_path.read_text())
     assert on_disk["id"] == b.pb.id
     assert on_disk["kind"] == "test.kind"
@@ -63,7 +67,7 @@ def test_persist_writes_bento_protojson(tmp_path):
 
 def test_write_request_archives_resolved_request(tmp_path):
     b = _new(tmp_path)
-    b.write_request({"prompt": "a cat", "recipe": "ambient"})
+    b.write_request({"prompt": "a cat", "recipe": "ambient"}, _IO)
     assert json.loads(b.request_path.read_text())["recipe"] == "ambient"
 
 

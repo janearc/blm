@@ -141,9 +141,11 @@ def test_ack_shape():
 
 
 def test_serve_inbox_builds_and_drives(tmp_path, monkeypatch):
-    # serve_inbox wires good_citizen.watcher to a build-bento-and-drive handler. drive the
-    # watcher one pass (monkeypatch watch -> a single scan) and assert the file was cooked.
+    # serve_inbox wires good_citizen.watcher to a build-bento-and-drive handler over a
+    # provider. drive the watcher one pass (monkeypatch watch -> a single scan) and assert
+    # the source was cooked.
     from good_citizen import watcher
+    from good_citizen.provider import FilesystemProvider
 
     inbox = tmp_path / "inbox"
     inbox.mkdir()
@@ -157,24 +159,24 @@ def test_serve_inbox_builds_and_drives(tmp_path, monkeypatch):
 
         def cook(self, b):
             out = BirbBento(b).out_dir / "done.txt"
-            out.write_text("cooked")
+            self.io.write(str(out), "cooked")
             return CookResult(artifact=str(out), ok=True)
 
-    def make_bento(path):
+    def make_bento(source):
         return BirbBento.new(
-            kind="test.ingest", bentos_root=bentos_root, name=path.name,
-            banchans=[("src", "source", path)],
+            kind="test.ingest", bentos_root=bentos_root, name=source.name,
+            banchans=[("src", "source", source.location)],
         )
 
+    provider = FilesystemProvider(inbox, suffixes={".txt"}, debounce_s=0)
     handled = []
     monkeypatch.setattr(
         watcher, "watch",
-        lambda ib, handler, suffixes=None, interval=5.0:
-            handled.append(watcher.scan_once(ib, set(), handler, suffixes)),
+        lambda p, handler, interval=5.0: handled.append(watcher.scan_once(p, handler)),
     )
-    service.serve_inbox(inbox, _IngestBirb, make_bento, suffixes={".txt"})
-    assert handled and handled[0]  # the file was handled
+    service.serve_inbox(provider, _IngestBirb, make_bento)
+    assert handled and handled[0]  # the source was handled
     # a bento was produced with a DONE manifest.
-    bentos = list(bentos_root.iterdir())
+    bentos = [d for d in bentos_root.iterdir() if d.is_dir()]
     assert len(bentos) == 1
     assert service.read_manifest(bentos_root, bentos[0].name).ok is True
