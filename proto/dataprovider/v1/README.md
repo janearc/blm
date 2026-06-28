@@ -1,5 +1,7 @@
 # dataprovider.v1 — the mesh data contract
 
+*If you know how to get shit out of schemaless, we can be friends.*
+
 **DataProvider is a neutral data layer: an append-only, immutable cell store that does not
 care what you talk to it with.** Hand it cells, ask for cells, present whatever credential
 your deployment uses — the protocol carries that credential without reading a byte of it.
@@ -10,7 +12,7 @@ program against — and it is explicitly **not** a global datastore. We took the
 API, not the distributed system behind it.
 
 One thing, said once: this runs for a single operator, and at `nodes == 1` that is exactly
-right. Everything below is written for that reality, without apology.
+right. Everything below is written for that reality.
 
 ## The cell model
 
@@ -129,5 +131,3 @@ Modeled on Uber's Schemaless, the append-only datastore described in:
 
 - [Designing Schemaless, Uber Engineering's Scalable Datastore Using MySQL](https://www.uber.com/us/en/blog/schemaless-part-one-mysql-datastore/)
 - [The Architecture of Schemaless, Uber Engineering's Trip Datastore Using MySQL](https://www.uber.com/us/en/blog/schemaless-part-two-architecture/)
-
-If you know how to get shit out of schemaless, we can be friends.
