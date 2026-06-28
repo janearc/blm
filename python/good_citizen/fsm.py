@@ -15,5 +15,6 @@ step = bento_fsm.step
 def run_step(handlers, b, sidecar_url=None):
     # advance a bento ONE step, relaying the transition to the sidecar. The bus is the
     # loop: call this once per consumed event, not in an in-process loop -- so a process
-    # may die between steps and another instance resumes from the bus.
-    bento_fsm.step(handlers, _emit.sidecar_emitter(sidecar_url), b)
+    # may die between steps and another instance resumes from the bus. The emitter closes
+    # over `handlers` so a FAILED event carries the handler's error_message + trace_id.
+    bento_fsm.step(handlers, _emit.sidecar_emitter(sidecar_url, handlers), b)

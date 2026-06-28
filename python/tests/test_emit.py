@@ -55,3 +55,35 @@ def test_sidecar_emitter_builds_event(monkeypatch):
     assert sent[0].bento_kind == "voice-memo"
     assert sent[0].state == bento_pb2.BENTO_STATE_DONE
     assert sent[0].event_id  # a uuid4 was set
+    assert sent[0].trace_id == "b3"  # trace_id == bento_id until a real trace field lands
+
+
+def test_failed_event_carries_error_and_trace(monkeypatch):
+    # the lossy-emit fix: a FAILED event must carry WHY. the error lives on the handler, so
+    # the emitter closes over it; trace_id correlates the bento's events.
+    sent = []
+    monkeypatch.setattr(emit, "emit", lambda ev, url=None: sent.append(ev))
+
+    class _H:
+        error = "transcribe failed: whisper exploded"
+
+    em = emit.sidecar_emitter(handler=_H())
+    em(bento_pb2.Bento(id="b9", kind="audio.ingest"), bento_pb2.BENTO_STATE_FAILED)
+    ev = sent[0]
+    assert ev.error_message == "transcribe failed: whisper exploded"
+    assert ev.trace_id == "b9"
+    assert ev.handler == "_H"
+
+
+def test_non_failed_event_has_no_error(monkeypatch):
+    # error_message is set only on FAILED -- it must not leak onto a healthy transition.
+    sent = []
+    monkeypatch.setattr(emit, "emit", lambda ev, url=None: sent.append(ev))
+
+    class _H:
+        error = "should not appear on a DONE event"
+
+    em = emit.sidecar_emitter(handler=_H())
+    em(bento_pb2.Bento(id="b10"), bento_pb2.BENTO_STATE_DONE)
+    assert sent[0].error_message == ""
+    assert sent[0].trace_id == "b10"

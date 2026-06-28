@@ -94,6 +94,27 @@ and a pipeline that would stamp past the bound fails the bento and drops it rath
 let it spiral. A pipeline's own convergence loop is the one sanctioned cycle;
 cross-pipeline travel does not circle back.
 
+## Taxonomy: project ⊇ pipeline ⊇ birb
+
+Three nested terms, widest first:
+
+- A **project** is the canonical unit the orchestrator manages — anything with a name and a
+  git/deploy identity. Every service in the roster is a project.
+- A **pipeline** is a project that does work on bentos: it has an inbox, walks bentos through
+  the lifecycle, and participates in the mesh. Every pipeline is a project; not every project
+  is a pipeline (a dashboard, a transfer tool, the orchestrator itself are projects, not
+  pipelines).
+- A **birb** is a pipeline built on the shared archetype layer, `birblib` — a thin subclass
+  that declares its kind, banchans, and recipe and implements one method, `cook()`. Every
+  birb is a pipeline; not every pipeline is a birb.
+
+The last distinction matters because it is easy to assume "pipeline" and "birb" are synonyms.
+They are not. **paling — the voice fine-tuner — is a pipeline but not a birb.** It predates the
+archetype, carries its own bento notion, and is a different animal: an eel, not a bird. It is a
+first-class citizen of the mesh (it speaks the bus, it has bentos) without subclassing
+`birblib`. `birblib` is one *way* to build a pipeline, not the definition of one; `good_citizen`
+— the bus/mesh citizen layer — is what every pipeline shares, birb or eel.
+
 ## Registration
 
 A pipeline is a kind of project, and the registry is the orchestrator,

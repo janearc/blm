@@ -1,7 +1,9 @@
 [project]
+# the 0.4.x line is the convergence line; 0.5 is reserved for the eventual stable tag.
+# adding birblib is a 0.4.x increment, not a minor bump.
 name = "blm-good-citizen"
-version = "0.4.0"
-description = "good-citizen: the Python citizen surface for the blm mesh -- the generated bento/banchan contracts plus the generated bento FSM harness."
+version = "0.4.1"
+description = "good-citizen + birblib: the Python citizen surface for the blm mesh -- the generated bento/banchan contracts and FSM harness, plus the birb archetype layer (BirbBento/BirbHandlers/dispatch/...) on top of it."
 requires-python = ">=3.12"
 dependencies = [
     # the generated protobuf message classes (bento_pb2, model_pb2, ...).
@@ -10,11 +12,24 @@ dependencies = [
     "transitions",
 ]
 
-# dev-only: linter + tests. the package ships without them.
+# birblib.service's HTTP surface is opt-in: a birb that only wants the bento/handlers/
+# daemon never pays for fastapi/uvicorn. install with `blm-good-citizen[service]`.
+[project.optional-dependencies]
+service = [
+    "fastapi",
+    "uvicorn",
+]
+
+# dev-only: linter + tests, plus the service extra so the HTTP surface is exercised in
+# CI. the package ships without this group.
 [dependency-groups]
 dev = [
     "pytest",
     "ruff",
+    "fastapi",
+    "uvicorn",
+    # the FastAPI TestClient (used by the service tests) needs httpx.
+    "httpx",
 ]
 
 # ruff: the lint gate, fleet-consistent at 100 cols. Run from this dir, so it lints the
@@ -30,12 +45,14 @@ select = ["E", "F", "B", "N", "T201"]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
-# the wheel ships the hand-written good_citizen package plus the generated namespace
-# packages, which live in the sibling gen/python tree (buf writes them there). A
-# consumer (magpie) installs one package and gets both the citizen surface and the
-# contracts.
+# the wheel ships the hand-written good_citizen and birblib packages plus the generated
+# namespace packages, which live in the sibling gen/python tree (buf writes them there). A
+# consumer (magpie) installs one distribution and gets the citizen surface, the birb
+# archetype layer, and the contracts. birblib is a distinct top-level package (not an
+# extension of good_citizen), shipped in the same distribution to keep cross-repo installs
+# to one git dependency on a connectivity-hostile network (see §9.1: lib name/home is open).
 [tool.hatch.build.targets.wheel]
-packages = ["good_citizen"]
+packages = ["good_citizen", "birblib"]
 
 [tool.hatch.build.targets.wheel.force-include]
 "../gen/python/bento" = "bento"

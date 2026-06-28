@@ -1,48 +1,63 @@
-# tests for good_citizen.watcher: scan_once picks up new files, honors a suffix filter,
-# does not reprocess seen files, and one bad file does not abort the pass.
+# tests for good_citizen.watcher: it is now a thin consumer of a Provider -- it pulls
+# sources from provider.read and never touches the filesystem itself. one bad source must
+# not abort the pass.
 from good_citizen import watcher
+from good_citizen.provider import Source
 
 
-def _drop(inbox, *names):
-    inbox.mkdir(parents=True, exist_ok=True)
-    for n in names:
-        (inbox / n).write_bytes(b"x")
+class MockProvider:
+    # an in-memory provider: read() yields preset sources, write()/notify() record calls.
+    # the watcher must drive entirely through this -- no filesystem access of its own.
+    def __init__(self, sources):
+        self._sources = list(sources)
+        self.writes = []
+        self.notifies = []
+
+    def read(self):
+        # one pass yields the queued sources, then nothing (as a real provider dedups).
+        out, self._sources = self._sources, []
+        return out
+
+    def write(self, location, data):
+        self.writes.append((location, data))
+        return location
+
+    def notify(self, record):
+        self.notifies.append(record)
 
 
-def test_scan_picks_up_new_files(tmp_path):
-    inbox = tmp_path / "inbox"
-    _drop(inbox, "a.m4a", "b.wav", "c.txt")
+def _src(name):
+    return Source(id=name, name=name, location=f"/inbox/{name}")
+
+
+def test_scan_pulls_sources_from_the_provider():
+    provider = MockProvider([_src("a.m4a"), _src("b.wav")])
     handled = []
-    watcher.scan_once(inbox, set(), handled.append)
-    assert {p.name for p in handled} == {"a.m4a", "b.wav", "c.txt"}
+    out = watcher.scan_once(provider, handled.append)
+    assert {s.name for s in out} == {"a.m4a", "b.wav"}
+    assert {s.name for s in handled} == {"a.m4a", "b.wav"}
 
 
-def test_scan_suffix_filter(tmp_path):
-    inbox = tmp_path / "inbox"
-    _drop(inbox, "a.m4a", "note.txt")
-    handled = []
-    watcher.scan_once(inbox, set(), handled.append, suffixes={".m4a"})
-    assert {p.name for p in handled} == {"a.m4a"}
-
-
-def test_scan_does_not_reprocess_seen(tmp_path):
-    inbox = tmp_path / "inbox"
-    _drop(inbox, "a.m4a")
-    seen = set()
-    watcher.scan_once(inbox, seen, lambda p: None)
-    assert watcher.scan_once(inbox, seen, lambda p: None) == []
-
-
-def test_scan_one_bad_file_does_not_stop_the_rest(tmp_path):
-    inbox = tmp_path / "inbox"
-    _drop(inbox, "good1.m4a", "bad.m4a", "good2.m4a")
+def test_one_bad_source_does_not_stop_the_rest():
+    provider = MockProvider([_src("good1"), _src("bad"), _src("good2")])
     ok = []
 
-    def handler(p):
-        if p.name == "bad.m4a":
+    def handler(s):
+        if s.name == "bad":
             raise RuntimeError("boom")
-        ok.append(p.name)
+        ok.append(s.name)
 
-    handled = watcher.scan_once(inbox, set(), handler)
-    assert set(ok) == {"good1.m4a", "good2.m4a"}
-    assert {p.name for p in handled} == {"good1.m4a", "good2.m4a"}
+    handled = watcher.scan_once(provider, handler)
+    assert set(ok) == {"good1", "good2"}
+    assert {s.name for s in handled} == {"good1", "good2"}
+
+
+def test_watcher_makes_no_direct_filesystem_calls():
+    # the seam holds: the watcher module imports neither os nor pathlib -- intake is wholly
+    # the provider's job. (a behavioral proof is in test_scan_*, this guards the structure.)
+    src = watcher.__dict__
+    assert "os" not in src and "Path" not in src
+    import inspect
+
+    text = inspect.getsource(watcher)
+    assert "open(" not in text and "iterdir" not in text and "Path(" not in text

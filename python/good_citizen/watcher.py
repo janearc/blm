@@ -1,44 +1,37 @@
-# good_citizen.watcher -- the generic inbox watch loop a pipeline reuses instead of
-# hand-rolling one (magpie drops its own onto this at P5). scan_once is one pass and is
-# testable without a running daemon; watch() is the poll loop on top of it.
+# good_citizen.watcher -- the generic intake loop, now a thin consumer of a Provider.
 #
-# dup-over-loss: the watcher never moves or deletes the source. An in-memory "seen" set
-# stops reprocessing within a run; a restart reprocesses whatever is still in the inbox,
-# which is safe because each run is idempotent (the standalone counterpart to the bus
-# redelivery the mesh uses).
+# the watcher no longer touches the filesystem: a Provider owns intake (provider.read),
+# the persistent dedup, and the partial-write guard. scan_once is one pass and is testable
+# with an in-memory mock provider; watch() is the poll loop on top of it.
+#
+# dup-over-loss: the provider never moves or deletes the source. Dedup PERSISTS across
+# restarts (the provider records what it has delivered), so a reboot -- which this laptop
+# does constantly -- does not re-deliver a source or re-create its bento. A genuine re-drop
+# (the operator copies the file in again, moving its mtime) is a new fact and is delivered.
 import logging
 import time
-from pathlib import Path
 
 log = logging.getLogger(__name__)
 
 
-def scan_once(inbox, seen, handler, suffixes=None):
-    # one pass: call handler(path) for each new file (optionally filtered to suffixes,
-    # lowercased), recording it in `seen`. Returns the paths handled this pass. A file
-    # that raises in handler is logged and skipped -- one bad file must not abort the pass.
-    inbox = Path(inbox)
-    inbox.mkdir(parents=True, exist_ok=True)
+def scan_once(provider, handler):
+    # one pass: pull the newly-arrived, stable sources from the provider and hand each to
+    # handler(source). Returns the sources handled this pass. A source that raises in the
+    # handler is logged and skipped -- one bad source must not abort the pass.
     handled = []
-    for f in sorted(inbox.iterdir()):
-        if not f.is_file() or f in seen:
-            continue
-        if suffixes is not None and f.suffix.lower() not in suffixes:
-            continue
-        seen.add(f)
+    for source in provider.read():
         try:
-            handler(f)
-            handled.append(f)
-        except Exception as e:  # noqa: BLE001 - one bad file must not stop the loop
-            log.error("good_citizen.watcher: failed on %s: %s", f, e)
+            handler(source)
+            handled.append(source)
+        except Exception as e:  # noqa: BLE001 - one bad source must not stop the loop
+            log.error("good_citizen.watcher: failed on %s: %s", source.name, e)
     return handled
 
 
-def watch(inbox, handler, suffixes=None, interval=5.0):
-    # poll the inbox forever, handling new files each pass. `seen` persists in memory
-    # across passes for the life of the process.
-    seen = set()
-    log.info("good_citizen.watcher: watching %s", inbox)
+def watch(provider, handler, interval=5.0):
+    # poll the provider forever, handling new sources each pass. Dedup is the provider's
+    # job and is durable, so the loop carries no in-memory "seen" set to lose on restart.
+    log.info("good_citizen.watcher: watching via %s", type(provider).__name__)
     while True:
-        scan_once(inbox, seen, handler, suffixes=suffixes)
+        scan_once(provider, handler)
         time.sleep(interval)
