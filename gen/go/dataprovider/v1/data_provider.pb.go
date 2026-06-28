@@ -43,9 +43,11 @@ type Cell struct {
 	Column string `protobuf:"bytes,2,opt,name=column,proto3" json:"column,omitempty"`
 	// ref_key is the version; the latest cell for (row_key, column) is the highest ref_key.
 	RefKey int64 `protobuf:"varint,3,opt,name=ref_key,json=refKey,proto3" json:"ref_key,omitempty"`
-	// body is the JSON value the cell carries.
+	// body is an arbitrary JSON object (google.protobuf.Struct), bounded by what marshals in
+	// one bus message -- its fields are what Query indexes.
 	Body *structpb.Struct `protobuf:"bytes,4,opt,name=body,proto3" json:"body,omitempty"`
-	// created_at is when the cell was written. Cells are immutable, so this never changes.
+	// created_at is when the cell was written. A faithful provider never mutates a cell, so
+	// this never changes.
 	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -123,12 +125,12 @@ type GetRequest struct {
 	RowKey    string                 `protobuf:"bytes,2,opt,name=row_key,json=rowKey,proto3" json:"row_key,omitempty"`
 	Column    string                 `protobuf:"bytes,3,opt,name=column,proto3" json:"column,omitempty"`
 	RefKey    int64                  `protobuf:"varint,4,opt,name=ref_key,json=refKey,proto3" json:"ref_key,omitempty"`
-	// credentials ride every request because the provider is stateless: there is no
-	// session and no login step, so a credential is presented per call. OAUTH proves you
-	// may make the request; an implementer may require further payloads (e.g. a per-record
-	// capability) for finer access. Opaque -- the provider validates per its policy and the
-	// wire interprets none of it. This per-request credential is the one explicit divergence
-	// from 2016 Schemaless (see README, "Divergence from Schemaless").
+	// credentials ride every request because the provider is stateless: there is no session
+	// and no login step, so a credential is presented per call. type is a routing hint; the
+	// payload is opaque and the protocol interprets none of it (see auth.v1). This per-request
+	// credential is the one explicit divergence from 2016 Schemaless -- and yes, we are aware
+	// it is absurd to track divergences from a dead 2016 protocol that never existed outside
+	// Uber. We do it anyway. (See README, "Divergence from Schemaless".)
 	Credentials   []*v1.AuthPayload `protobuf:"bytes,5,rep,name=credentials,proto3" json:"credentials,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -538,9 +540,9 @@ type QueryRequest struct {
 	Index      string                     `protobuf:"bytes,2,opt,name=index,proto3" json:"index,omitempty"`
 	Predicates map[string]*structpb.Value `protobuf:"bytes,3,rep,name=predicates,proto3" json:"predicates,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	// shard_hint is provisional: an implementation-specific routing hint, not a contract
-	// guarantee, and it may move to a transport header later. It is present for Schemaless
-	// fidelity (Schemaless mandates a shard key on a query) and is a no-op for our use --
-	// we do not shard at n=1.
+	// guarantee, and it may move to a transport header later. blm is a nodes == 1 mesh: we
+	// ignore sharding entirely and keep this field to pretend we care -- present for
+	// Schemaless fidelity, a no-op for us.
 	ShardHint string `protobuf:"bytes,4,opt,name=shard_hint,json=shardHint,proto3" json:"shard_hint,omitempty"`
 	Limit     uint32 `protobuf:"varint,5,opt,name=limit,proto3" json:"limit,omitempty"`
 	// per-request credential; see GetRequest.credentials and auth.v1.
@@ -680,14 +682,14 @@ var File_dataprovider_v1_data_provider_proto protoreflect.FileDescriptor
 
 const file_dataprovider_v1_data_provider_proto_rawDesc = "" +
 	"\n" +
-	"#dataprovider/v1/data_provider.proto\x12\x0fdataprovider.v1\x1a\x12auth/v1/auth.proto\x1a\x1cgoogle/protobuf/struct.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xb8\x01\n" +
+	"#dataprovider/v1/data_provider.proto\x12\x0fdataprovider.v1\x1a\x12auth/v1/auth.proto\x1a\x1cgoogle/protobuf/struct.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xbe\x01\n" +
 	"\x04Cell\x12\x17\n" +
 	"\arow_key\x18\x01 \x01(\tR\x06rowKey\x12\x16\n" +
 	"\x06column\x18\x02 \x01(\tR\x06column\x12\x17\n" +
 	"\aref_key\x18\x03 \x01(\x03R\x06refKey\x12+\n" +
 	"\x04body\x18\x04 \x01(\v2\x17.google.protobuf.StructR\x04body\x129\n" +
 	"\n" +
-	"created_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\"\xac\x01\n" +
+	"created_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAtJ\x04\b\x06\x10\a\"\xac\x01\n" +
 	"\n" +
 	"GetRequest\x12\x1c\n" +
 	"\tnamespace\x18\x01 \x01(\tR\tnamespace\x12\x17\n" +

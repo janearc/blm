@@ -5,18 +5,28 @@ syntax = "proto3";
 // holds no auth state -- it transports credentials; auth policy is the implementer's.
 package auth.v1;
 
-// AuthPayloadType tags what kind of credential a payload carries. It is extensible --
-// add types as needed; there are no external clients to break. The zero value
-// (UNSPECIFIED) means no credential: the old network-trust / 2016-Schemaless mode
-// (trusted because you could reach it), one end of the same axis as a presented one.
+// AuthPayloadType is a routing hint for what kind of credential a payload carries. The
+// protocol understands NONE of these -- the payload is opaque bytes and we never describe
+// its contents; that is the consumer's. The type only tells an implementer which validator
+// to hand the bytes to. Extensible: add types freely, there are no external clients to
+// break. The zero value (UNSPECIFIED) means no credential -- the network-trust mode, one
+// end of the same axis as a presented credential.
 enum AuthPayloadType {
   AUTH_PAYLOAD_TYPE_UNSPECIFIED = 0;
   AUTH_PAYLOAD_TYPE_OAUTH = 1;
+  AUTH_PAYLOAD_TYPE_SAML = 2;
+  AUTH_PAYLOAD_TYPE_BAREWORD = 3;
+  AUTH_PAYLOAD_TYPE_JWT = 4;
+  AUTH_PAYLOAD_TYPE_MTLS = 5;
+  AUTH_PAYLOAD_TYPE_API_KEY = 6;
+  AUTH_PAYLOAD_TYPE_BASIC = 7;
+  AUTH_PAYLOAD_TYPE_BEARER = 8;
+  AUTH_PAYLOAD_TYPE_CAPABILITY = 9;
 }
 
 // AuthPayload is one opaque credential presented on a request. The mesh never reads
-// payload; an implementer validates it per its own policy and interprets nothing on
-// the wire's behalf.
+// payload; type is only a routing hint (see AuthPayloadType). An implementer hands the
+// bytes to the matching validator and interprets nothing on the wire's behalf.
 message AuthPayload {
   AuthPayloadType type = 1;
   bytes payload = 2;

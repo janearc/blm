@@ -23,10 +23,16 @@ message Cell {
   string column = 2;
   // ref_key is the version; the latest cell for (row_key, column) is the highest ref_key.
   int64 ref_key = 3;
-  // body is the JSON value the cell carries.
+  // body is an arbitrary JSON object (google.protobuf.Struct), bounded by what marshals in
+  // one bus message -- its fields are what Query indexes.
   google.protobuf.Struct body = 4;
-  // created_at is when the cell was written. Cells are immutable, so this never changes.
+  // created_at is when the cell was written. A faithful provider never mutates a cell, so
+  // this never changes.
   google.protobuf.Timestamp created_at = 5;
+
+  // A body larger than one bus message is a future concern; field 6 is reserved for a
+  // chunk/offset or blob-ref so adding it later is not a breaking change. Not implemented.
+  reserved 6;
 }
 
 // GetRequest fetches one specific cell version: the cell at (row_key, column, ref_key).
@@ -35,12 +41,12 @@ message GetRequest {
   string row_key = 2;
   string column = 3;
   int64 ref_key = 4;
-  // credentials ride every request because the provider is stateless: there is no
-  // session and no login step, so a credential is presented per call. OAUTH proves you
-  // may make the request; an implementer may require further payloads (e.g. a per-record
-  // capability) for finer access. Opaque -- the provider validates per its policy and the
-  // wire interprets none of it. This per-request credential is the one explicit divergence
-  // from 2016 Schemaless (see README, "Divergence from Schemaless").
+  // credentials ride every request because the provider is stateless: there is no session
+  // and no login step, so a credential is presented per call. type is a routing hint; the
+  // payload is opaque and the protocol interprets none of it (see auth.v1). This per-request
+  // credential is the one explicit divergence from 2016 Schemaless -- and yes, we are aware
+  // it is absurd to track divergences from a dead 2016 protocol that never existed outside
+  // Uber. We do it anyway. (See README, "Divergence from Schemaless".)
   repeated auth.v1.AuthPayload credentials = 5;
 }
 
@@ -98,9 +104,9 @@ message QueryRequest {
   string index = 2;
   map<string, google.protobuf.Value> predicates = 3;
   // shard_hint is provisional: an implementation-specific routing hint, not a contract
-  // guarantee, and it may move to a transport header later. It is present for Schemaless
-  // fidelity (Schemaless mandates a shard key on a query) and is a no-op for our use --
-  // we do not shard at n=1.
+  // guarantee, and it may move to a transport header later. blm is a nodes == 1 mesh: we
+  // ignore sharding entirely and keep this field to pretend we care -- present for
+  // Schemaless fidelity, a no-op for us.
   string shard_hint = 4;
   uint32 limit = 5;
   // per-request credential; see GetRequest.credentials and auth.v1.

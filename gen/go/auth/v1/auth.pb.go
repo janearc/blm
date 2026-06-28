@@ -25,15 +25,25 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// AuthPayloadType tags what kind of credential a payload carries. It is extensible --
-// add types as needed; there are no external clients to break. The zero value
-// (UNSPECIFIED) means no credential: the old network-trust / 2016-Schemaless mode
-// (trusted because you could reach it), one end of the same axis as a presented one.
+// AuthPayloadType is a routing hint for what kind of credential a payload carries. The
+// protocol understands NONE of these -- the payload is opaque bytes and we never describe
+// its contents; that is the consumer's. The type only tells an implementer which validator
+// to hand the bytes to. Extensible: add types freely, there are no external clients to
+// break. The zero value (UNSPECIFIED) means no credential -- the network-trust mode, one
+// end of the same axis as a presented credential.
 type AuthPayloadType int32
 
 const (
 	AuthPayloadType_AUTH_PAYLOAD_TYPE_UNSPECIFIED AuthPayloadType = 0
 	AuthPayloadType_AUTH_PAYLOAD_TYPE_OAUTH       AuthPayloadType = 1
+	AuthPayloadType_AUTH_PAYLOAD_TYPE_SAML        AuthPayloadType = 2
+	AuthPayloadType_AUTH_PAYLOAD_TYPE_BAREWORD    AuthPayloadType = 3
+	AuthPayloadType_AUTH_PAYLOAD_TYPE_JWT         AuthPayloadType = 4
+	AuthPayloadType_AUTH_PAYLOAD_TYPE_MTLS        AuthPayloadType = 5
+	AuthPayloadType_AUTH_PAYLOAD_TYPE_API_KEY     AuthPayloadType = 6
+	AuthPayloadType_AUTH_PAYLOAD_TYPE_BASIC       AuthPayloadType = 7
+	AuthPayloadType_AUTH_PAYLOAD_TYPE_BEARER      AuthPayloadType = 8
+	AuthPayloadType_AUTH_PAYLOAD_TYPE_CAPABILITY  AuthPayloadType = 9
 )
 
 // Enum value maps for AuthPayloadType.
@@ -41,10 +51,26 @@ var (
 	AuthPayloadType_name = map[int32]string{
 		0: "AUTH_PAYLOAD_TYPE_UNSPECIFIED",
 		1: "AUTH_PAYLOAD_TYPE_OAUTH",
+		2: "AUTH_PAYLOAD_TYPE_SAML",
+		3: "AUTH_PAYLOAD_TYPE_BAREWORD",
+		4: "AUTH_PAYLOAD_TYPE_JWT",
+		5: "AUTH_PAYLOAD_TYPE_MTLS",
+		6: "AUTH_PAYLOAD_TYPE_API_KEY",
+		7: "AUTH_PAYLOAD_TYPE_BASIC",
+		8: "AUTH_PAYLOAD_TYPE_BEARER",
+		9: "AUTH_PAYLOAD_TYPE_CAPABILITY",
 	}
 	AuthPayloadType_value = map[string]int32{
 		"AUTH_PAYLOAD_TYPE_UNSPECIFIED": 0,
 		"AUTH_PAYLOAD_TYPE_OAUTH":       1,
+		"AUTH_PAYLOAD_TYPE_SAML":        2,
+		"AUTH_PAYLOAD_TYPE_BAREWORD":    3,
+		"AUTH_PAYLOAD_TYPE_JWT":         4,
+		"AUTH_PAYLOAD_TYPE_MTLS":        5,
+		"AUTH_PAYLOAD_TYPE_API_KEY":     6,
+		"AUTH_PAYLOAD_TYPE_BASIC":       7,
+		"AUTH_PAYLOAD_TYPE_BEARER":      8,
+		"AUTH_PAYLOAD_TYPE_CAPABILITY":  9,
 	}
 )
 
@@ -76,8 +102,8 @@ func (AuthPayloadType) EnumDescriptor() ([]byte, []int) {
 }
 
 // AuthPayload is one opaque credential presented on a request. The mesh never reads
-// payload; an implementer validates it per its own policy and interprets nothing on
-// the wire's behalf.
+// payload; type is only a routing hint (see AuthPayloadType). An implementer hands the
+// bytes to the matching validator and interprets nothing on the wire's behalf.
 type AuthPayload struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Type          AuthPayloadType        `protobuf:"varint,1,opt,name=type,proto3,enum=auth.v1.AuthPayloadType" json:"type,omitempty"`
@@ -137,10 +163,18 @@ const file_auth_v1_auth_proto_rawDesc = "" +
 	"\x12auth/v1/auth.proto\x12\aauth.v1\"U\n" +
 	"\vAuthPayload\x12,\n" +
 	"\x04type\x18\x01 \x01(\x0e2\x18.auth.v1.AuthPayloadTypeR\x04type\x12\x18\n" +
-	"\apayload\x18\x02 \x01(\fR\apayload*Q\n" +
+	"\apayload\x18\x02 \x01(\fR\apayload*\xc0\x02\n" +
 	"\x0fAuthPayloadType\x12!\n" +
 	"\x1dAUTH_PAYLOAD_TYPE_UNSPECIFIED\x10\x00\x12\x1b\n" +
-	"\x17AUTH_PAYLOAD_TYPE_OAUTH\x10\x01B\x83\x01\n" +
+	"\x17AUTH_PAYLOAD_TYPE_OAUTH\x10\x01\x12\x1a\n" +
+	"\x16AUTH_PAYLOAD_TYPE_SAML\x10\x02\x12\x1e\n" +
+	"\x1aAUTH_PAYLOAD_TYPE_BAREWORD\x10\x03\x12\x19\n" +
+	"\x15AUTH_PAYLOAD_TYPE_JWT\x10\x04\x12\x1a\n" +
+	"\x16AUTH_PAYLOAD_TYPE_MTLS\x10\x05\x12\x1d\n" +
+	"\x19AUTH_PAYLOAD_TYPE_API_KEY\x10\x06\x12\x1b\n" +
+	"\x17AUTH_PAYLOAD_TYPE_BASIC\x10\a\x12\x1c\n" +
+	"\x18AUTH_PAYLOAD_TYPE_BEARER\x10\b\x12 \n" +
+	"\x1cAUTH_PAYLOAD_TYPE_CAPABILITY\x10\tB\x83\x01\n" +
 	"\vcom.auth.v1B\tAuthProtoP\x01Z,github.com/janearc/blm/gen/go/auth/v1;authv1\xa2\x02\x03AXX\xaa\x02\aAuth.V1\xca\x02\aAuth\\V1\xe2\x02\x13Auth\\V1\\GPBMetadata\xea\x02\bAuth::V1b\x06proto3"
 
 var (
