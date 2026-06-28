@@ -55,3 +55,14 @@ Every change runs the same gates locally and in CI: `ruff` (E,F,B,N,T201 @ 100),
 docstring ban (intent in `#` comments, never docstrings), `pytest`, and — for any proto
 change — `buf generate` with the committed gen in sync (the gen-drift gate). Lint and tests
 pass before a push.
+
+## Trust — who can participate (vouch)
+
+blm uses Mitchell Hashimoto's [vouch](https://github.com/mitchellh/vouch) trust protocol.
+`VOUCHED.td` at the repository root lists the handles trusted to participate here; a
+denounced handle (leading `-`) is blocked. blm is public, and stating who is trusted plainly
+— rather than leaving it implicit — is part of the point.
+
+Being vouched grants **participation, not write access**: vouched handles are trusted to open
+issues and pull requests. Landing and merge remain the maintainer's decision — vouch confers
+trust to contribute, never the commit bit.
