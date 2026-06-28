@@ -49,9 +49,9 @@ def test_clean_run_walks_cook_then_done(tmp_path):
     seen = []
     manifest = driver.run(_Birb(), bento, emitter=lambda b, s: seen.append(s))
     assert seen == [bento_pb2.BENTO_STATE_COOK, bento_pb2.BENTO_STATE_DONE]
-    assert manifest["ok"] is True
-    assert manifest["state"] == "DONE"
-    assert manifest["kind"] == "test.ingest"
+    assert manifest.ok is True
+    assert manifest.state == "DONE"
+    assert manifest.kind == "test.ingest"
 
 
 def test_noticed_copies_source_and_does_not_move_it(tmp_path):
@@ -62,7 +62,8 @@ def test_noticed_copies_source_and_does_not_move_it(tmp_path):
     assert src.exists(), "on_noticed must COPY the source, never move/delete it"
     archived = bento.banchan("src").location
     assert "raw_data" in archived
-    assert manifest["params"] == {}  # no request.json written by this birb
+    # the base now archives a request.json at NOTICED (the prompt is the default request).
+    assert manifest.params == {"prompt": ""}
 
 
 def test_artifact_banchan_is_recorded_and_lands_in_manifest(tmp_path):
@@ -70,7 +71,7 @@ def test_artifact_banchan_is_recorded_and_lands_in_manifest(tmp_path):
     manifest = driver.run(_Birb(), bento)
     out = bento.banchan("out")
     assert out is not None
-    assert manifest["artifact"] == out.location
+    assert manifest.artifact == out.location
     # the manifest is persisted on disk next to the outputs, matching the returned one.
     on_disk = json.loads(bento.manifest_path.read_text())
     assert on_disk["ok"] is True
@@ -88,9 +89,9 @@ def test_degraded_cook_is_partial_then_accepted_done(tmp_path):
         bento_pb2.BENTO_STATE_PARTIAL,
         bento_pb2.BENTO_STATE_DONE,
     ]
-    assert manifest["ok"] is True
-    assert manifest["state"] == "DONE"
-    assert manifest["detail"]["degraded"] is True
+    assert manifest.ok is True
+    assert manifest.state == "DONE"
+    assert manifest.detail["degraded"] is True
 
 
 def test_failed_cook_fails_the_bento_and_driver_raises(tmp_path):
@@ -118,17 +119,19 @@ def test_missing_source_fails_at_noticed(tmp_path):
     assert json.loads(bento.manifest_path.read_text())["state"] == "FAILED"
 
 
-def test_params_reads_archived_request_when_present(tmp_path):
-    # the default params() surfaces a request.json the birb archived at NOTICED time.
+def test_params_reads_archived_request(tmp_path):
+    # a birb declares its resolved request via request(); on_noticed archives it to
+    # raw_data/request.json, and params() surfaces it under the manifest.
     src, bento = _bento(tmp_path)
 
     class _WithRequest(_Birb):
-        def cook(self, b):
-            BirbBento(b).write_request({"prompt": "hi"})
-            return super().cook(b)
+        def request(self, bento):
+            return {"prompt": "hi", "recipe": "default"}
 
     manifest = driver.run(_WithRequest(), bento)
-    assert manifest["params"] == {"prompt": "hi"}
+    assert manifest.params == {"prompt": "hi", "recipe": "default"}
+    # the archive is real on disk -- replay can reconstruct the intent.
+    assert json.loads(bento.request_path.read_text()) == {"prompt": "hi", "recipe": "default"}
 
 
 def test_source_optional_birb_scaffolds_without_a_copy(tmp_path):
@@ -144,5 +147,5 @@ def test_source_optional_birb_scaffolds_without_a_copy(tmp_path):
 
     bento = BirbBento.new(kind="test.generate", bentos_root=tmp_path / "bentos")
     manifest = driver.run(_PromptBirb(), bento)
-    assert manifest["ok"] is True
+    assert manifest.ok is True
     assert bento.bento_path.is_file()  # persisted at NOTICED even with no source

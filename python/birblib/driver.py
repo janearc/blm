@@ -9,23 +9,37 @@
 from bento.v1 import bento_pb2
 from good_citizen import fsm
 
-from birblib.bento import BirbBento
+from birblib.bento import BirbBento, Manifest
 
 _TERMINAL = {bento_pb2.BENTO_STATE_DONE, bento_pb2.BENTO_STATE_FAILED}
 
 
-def run(handlers, bento, emitter=None) -> dict:
-    # drive `bento` (a BirbBento or a bare bento_pb2.Bento) to a terminal state through
-    # the generated FSM, relaying each transition to `emitter` when given (the CLI passes
-    # None -- local, no bus). returns the handler's manifest (where the outputs are), NOT
-    # the bytes. raises RuntimeError if the bento ends FAILED, so a caller surfaces the
-    # error rather than reporting success.
-    pb = bento.pb if isinstance(bento, BirbBento) else bento
+def _pb(bento) -> bento_pb2.Bento:
+    # accept a BirbBento or a bare bento_pb2.Bento, return the underlying protobuf.
+    return bento.pb if isinstance(bento, BirbBento) else bento
+
+
+def _walk(handlers, pb, emitter) -> None:
+    # step `pb` to a terminal/resting state through the generated FSM, relaying each
+    # transition to `emitter`. this is the one step-loop; run() (the CLI, raises on FAILED)
+    # and service.drive (the daemon, returns on FAILED) share it and differ ONLY in the
+    # post-walk policy. a handler that does not advance the state stops the walk rather than
+    # spinning.
     while pb.state not in _TERMINAL:
         prev = pb.state
         fsm.step(handlers, emitter, pb)
-        if pb.state == prev:  # a handler that did not advance -- stop rather than spin
+        if pb.state == prev:
             break
+
+
+def run(handlers, bento, emitter=None) -> Manifest | None:
+    # drive `bento` (a BirbBento or a bare bento_pb2.Bento) to a terminal state, relaying
+    # each transition to `emitter` when given (the CLI passes None -- local, no bus).
+    # returns the handler's manifest (where the outputs are), NOT the bytes. raises
+    # RuntimeError if the bento ends FAILED, so a caller surfaces the error rather than
+    # reporting success.
+    pb = _pb(bento)
+    _walk(handlers, pb, emitter)
     if pb.state == bento_pb2.BENTO_STATE_FAILED:
         raise RuntimeError(handlers.error or "birb bento failed")
     return handlers.manifest

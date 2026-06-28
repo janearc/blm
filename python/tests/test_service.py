@@ -6,7 +6,7 @@ import time
 import pytest
 
 from birblib import service
-from birblib.bento import BirbBento
+from birblib.bento import BirbBento, Manifest
 from birblib.handlers import BirbHandlers, CookResult
 
 # fastapi is the optional [service] extra; skip cleanly if it is not installed.
@@ -116,20 +116,28 @@ def test_drive_returns_manifest_and_does_not_raise_on_failed(tmp_path):
 
     bento = BirbBento.new(kind="test.fail", bentos_root=tmp_path / "bentos")
     manifest = service.drive(_Fails(), bento)
-    assert manifest["state"] == "FAILED"
-    assert manifest["ok"] is False
+    assert manifest.state == "FAILED"
+    assert manifest.ok is False
+
+
+def _manifest(**kw):
+    base = dict(
+        bento_id="abc", kind="k", ok=True, state="DONE", artifact="/x/out.txt",
+        params={}, stats={}, detail={},
+    )
+    base.update(kw)
+    return Manifest(**base)
 
 
 def test_ack_shape():
-    m = {"ok": True, "bento_id": "abc", "state": "DONE", "artifact": "/x/out.txt"}
-    assert service.ack(m, message="graaaak") == {
+    assert service.ack(_manifest(), message="graaaak") == {
         "status": "ok",
         "bento_id": "abc",
         "state": "DONE",
         "artifact": "/x/out.txt",
         "message": "graaaak",
     }
-    assert service.ack({"ok": False, "state": "PARTIAL"})["status"] == "incomplete"
+    assert service.ack(_manifest(ok=False, state="PARTIAL"))["status"] == "incomplete"
 
 
 def test_serve_inbox_builds_and_drives(tmp_path, monkeypatch):
@@ -169,4 +177,4 @@ def test_serve_inbox_builds_and_drives(tmp_path, monkeypatch):
     # a bento was produced with a DONE manifest.
     bentos = list(bentos_root.iterdir())
     assert len(bentos) == 1
-    assert service.read_manifest(bentos_root, bentos[0].name)["ok"] is True
+    assert service.read_manifest(bentos_root, bentos[0].name).ok is True

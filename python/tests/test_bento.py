@@ -4,7 +4,7 @@ import json
 
 from bento.v1 import bento_pb2
 
-from birblib.bento import BirbBento, state_name
+from birblib.bento import BirbBento, Manifest, state_name
 
 
 def _new(tmp_path, **kw):
@@ -78,7 +78,9 @@ def test_manifest_envelope_is_the_canonical_shape(tmp_path):
         stats={"cook": {"wall_s": 1.0}},
         detail={"backend": "afm"},
     )
-    assert m == {
+    assert isinstance(m, Manifest)
+    assert m.ok is True
+    assert m.to_dict() == {
         "bento_id": b.pb.id,
         "kind": "test.kind",
         "ok": True,
@@ -88,6 +90,8 @@ def test_manifest_envelope_is_the_canonical_shape(tmp_path):
         "stats": {"cook": {"wall_s": 1.0}},
         "detail": {"backend": "afm"},
     }
+    # the typed boundary round-trips through disk (read parses back into the model).
+    assert Manifest.from_dict(m.to_dict()) == m
 
 
 def test_manifest_ok_is_only_true_for_done(tmp_path):
@@ -98,7 +102,7 @@ def test_manifest_ok_is_only_true_for_done(tmp_path):
         bento_pb2.BENTO_STATE_COOK,
     ):
         m = b.manifest(state=state, artifact=None, params={}, stats={}, detail={})
-        assert m["ok"] is False
+        assert m.ok is False
 
 
 def test_state_name_strips_the_prefix():

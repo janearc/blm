@@ -11,6 +11,7 @@
 # lets BirbHandlers drive. a birb MAY subclass to add typed banchan accessors (magpie's
 # .audio / .transcript), but the base is complete on its own.
 
+import dataclasses
 import json
 import uuid
 from pathlib import Path
@@ -18,6 +19,32 @@ from pathlib import Path
 from google.protobuf import json_format
 
 from bento.v1 import bento_pb2
+
+
+@dataclasses.dataclass(frozen=True)
+class Manifest:
+    # the one canonical manifest a birb emits, as a typed record. it is NOT a wire contract
+    # (bento.proto is the wire SOT); it is a DERIVED view that crosses the disk + HTTP/CLI
+    # edge, so it is a plain frozen dataclass -- the standard's "a typed model for the
+    # non-mesh edges" without dragging a validation dep into the core citizen surface. the
+    # field set is fixed; `ok` is the single success signal and is always `state == DONE`.
+    bento_id: str
+    kind: str
+    ok: bool
+    state: str
+    artifact: str | None
+    params: dict
+    stats: dict
+    detail: dict
+
+    def to_dict(self) -> dict:
+        # the JSON-serializable view, for write_manifest and the HTTP/CLI surfaces.
+        return dataclasses.asdict(self)
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "Manifest":
+        # reconstruct from an on-disk manifest.json (the typed boundary on read, too).
+        return cls(**{f.name: d[f.name] for f in dataclasses.fields(cls)})
 
 
 def state_name(state: int) -> str:
@@ -133,11 +160,11 @@ class BirbBento:
         self.raw_dir.mkdir(parents=True, exist_ok=True)
         self.request_path.write_text(json.dumps(request, indent=2))
 
-    def write_manifest(self, manifest: dict) -> None:
+    def write_manifest(self, manifest: "Manifest") -> None:
         # the manifest is the answer to "where is the result, and did it work" -- written
         # next to the outputs so a reader finds it without the bus.
         if self.root.is_dir():
-            self.manifest_path.write_text(json.dumps(manifest, indent=2))
+            self.manifest_path.write_text(json.dumps(manifest.to_dict(), indent=2))
 
     # --- the manifest envelope (the one canonical shape, §3.2) -----------------
     def manifest(
@@ -148,18 +175,18 @@ class BirbBento:
         params: dict,
         stats: dict,
         detail: dict,
-    ) -> dict:
-        # the single manifest shape every birb emits, derived from the bento's terminal
-        # state. `ok` is the one success signal (state == DONE); `state` keeps the
+    ) -> Manifest:
+        # the single manifest every birb emits, derived from the bento's terminal state.
+        # `ok` is the one success signal (state == DONE); `state` keeps the
         # DONE/PARTIAL/FAILED distinction; `detail` is pipeline-specific and namespaced,
         # never spread across the top level.
-        return {
-            "bento_id": self.pb.id,
-            "kind": self.pb.kind,
-            "ok": state == bento_pb2.BENTO_STATE_DONE,
-            "state": state_name(state),
-            "artifact": artifact,
-            "params": params,
-            "stats": stats,
-            "detail": detail,
-        }
+        return Manifest(
+            bento_id=self.pb.id,
+            kind=self.pb.kind,
+            ok=state == bento_pb2.BENTO_STATE_DONE,
+            state=state_name(state),
+            artifact=artifact,
+            params=params,
+            stats=stats,
+            detail=detail,
+        )

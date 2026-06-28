@@ -52,7 +52,11 @@ def process(audio_path: Path) -> dict:
 
 ## The manifest envelope
 
-One canonical shape, written to `root/manifest.json` and returned by `driver.run`:
+`driver.run` returns a typed `birblib.Manifest` (a frozen dataclass — the manifest is a
+*derived view* that crosses the disk + HTTP/CLI edge, not a wire contract; `bento.proto`
+stays the wire SOT). `BirbBento.write_manifest` serializes `.to_dict()` to
+`root/manifest.json`; `Manifest.from_dict` parses it back (the boundary is typed on read,
+too):
 
 ```json
 {
@@ -64,8 +68,11 @@ One canonical shape, written to `root/manifest.json` and returned by `driver.run
 }
 ```
 
-`ok` (`state == DONE`) is the single success signal. `detail` is pipeline-specific and
-namespaced — degrade reasons, the dispatcher's decision tree, never spread at top level.
+`ok` (`state == DONE`) is the single success signal. `params` is the resolved request a
+birb archives at NOTICED (declare it via `BirbHandlers.request()` — default is the bento's
+prompt — and it lands in `raw_data/request.json` so a replay can reconstruct intent).
+`detail` is pipeline-specific and namespaced — degrade reasons, the dispatcher's decision
+tree, never spread at top level.
 
 ## The other seams
 
@@ -77,11 +84,14 @@ namespaced — degrade reasons, the dispatcher's decision tree, never spread at 
 - **`birblib.recipe`** — `Request` + `resolve(recipe_values, overrides, overridable)`:
   lay caller overrides over the pipeline's tuned values, reject unknown keys, record
   overriding as the `anti_pattern` signal. (Recipe scope is open decision §9.2.)
-- **`birblib.service`** — `serve_inbox(...)` (good_citizen.watcher + real sidecar emit),
-  `build_app(...)` (the `/health`, `202`-submit + `GET /jobs/{id}` poll, and
-  `/artifacts/{id}/{name}` traversal-guarded surface), and `ack(...)` (the JSON-by-default
-  CLI ACK). The HTTP half needs the optional extra: `pip install blm-good-citizen[service]`.
-  The per-modality `/v1` facade stays the birb's own.
+- **`birblib.service`** — `serve_inbox(...)` (good_citizen.watcher + real sidecar emit;
+  resilient via the inbox + idempotent reprocess), `build_app(...)` (the `/health`,
+  `202`-submit + `GET /jobs/{id}` poll, and `/artifacts/{id}/{name}` traversal-guarded
+  surface), and `ack(...)` (the JSON-by-default CLI ACK). The HTTP half needs the optional
+  extra: `pip install blm-good-citizen[service]`. **`build_app`'s `POST /jobs` is a
+  single-node/local-dev affordance** — it persists the NOTICED bento then drives it on an
+  in-process thread; the *fleet* submit path is bus-enqueue (persist, emit NOTICED, let a
+  bus worker drive it). The per-modality `/v1` facade stays the birb's own.
 - **`birblib.lang`** — ISO 639-1 as the canonical language id, `display_name(code)` for a
   human-readable name in a prompt (fails loud on an unknown code; never passes a bare code
   through — the `"fluent en"` bug).

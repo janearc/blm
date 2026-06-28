@@ -31,9 +31,12 @@ class NoBackendAvailable(RuntimeError):  # noqa: N818 - reads as a condition, li
     # no backend in the set was usable. carries the decision tree as .detail so a caller
     # that degrades (raw beats nothing) can still record WHY every backend was passed over.
     def __init__(self, detail: dict) -> None:
-        super().__init__("no backend available: " + ", ".join(
-            f"{name} ({why})" for name, why in detail.get("tried", {}).items()
-        ) or "no backend available")
+        # name what was probed and why each was passed over; "<none probed>" when the
+        # backend set was empty (the concatenation is always truthy, so the fallback has to
+        # wrap the join, not the whole string).
+        tried = detail.get("tried", {})
+        probed = ", ".join(f"{name} ({why})" for name, why in tried.items()) or "<none probed>"
+        super().__init__("no backend available: " + probed)
         self.detail = detail
 
 

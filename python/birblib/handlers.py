@@ -10,6 +10,7 @@
 # only NOTICED -> COOK -> (DONE | PARTIAL -> DONE | FAILED), exactly as the proto intends.
 
 import dataclasses
+import json
 import logging
 import shutil
 from pathlib import Path
@@ -17,7 +18,7 @@ from pathlib import Path
 from bento.v1 import bento_pb2
 from good_citizen import fsm
 
-from birblib.bento import BirbBento
+from birblib.bento import BirbBento, Manifest
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +55,7 @@ class BirbHandlers(fsm.Handlers):
     def __init__(self) -> None:
         self.stats: dict = {}
         self.detail: dict = {}
-        self.manifest: dict | None = None
+        self.manifest: Manifest | None = None
         self.error: str = ""
 
     # --- the ONE method a birb implements -------------------------------------
@@ -64,13 +65,18 @@ class BirbHandlers(fsm.Handlers):
         # with `birblib.Stage(name, self.stats)`.
         raise NotImplementedError
 
+    def request(self, bento: BirbBento) -> dict:
+        # the RESOLVED request the run was built from -- archived to raw_data/request.json
+        # at NOTICED so a replay can reconstruct intent (C3). default: the per-bento prompt
+        # that biases this kind's model passes. a recipe birb overrides this to return its
+        # resolved job (recipe + any caller overrides).
+        return {"prompt": bento.pb.prompt}
+
     def params(self, bento: BirbBento) -> dict:
-        # the resolved request that becomes the manifest's `params`. default: read the
-        # archived request.json if the birb wrote one, else {}. override to compute it.
+        # the resolved request that becomes the manifest's `params`: read back the
+        # request.json archived at NOTICED. empty only if nothing was archived.
         path = bento.request_path
         if path.is_file():
-            import json
-
             return json.loads(path.read_text())
         return {}
 
@@ -92,6 +98,8 @@ class BirbHandlers(fsm.Handlers):
             archived = bento.raw_dir / (b.name or src.name)
             shutil.copy2(src, archived)
             ban.location = str(archived)
+        # archive the resolved request (C3) and persist the bento as the on-disk SOT.
+        bento.write_request(self.request(bento))
         bento.persist()
         return bento_pb2.BENTO_STATE_COOK
 

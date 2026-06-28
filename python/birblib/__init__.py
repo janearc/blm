@@ -12,7 +12,7 @@
 # and knows nothing birb-specific. a birb declares its kind, banchans, and recipe, and
 # implements ONE method -- cook(). everything below is the shared surface it builds on.
 
-from birblib.bento import BirbBento, state_name
+from birblib.bento import BirbBento, Manifest, state_name
 from birblib.dispatch import Backend, NoBackendAvailable, dispatch
 from birblib.driver import run
 from birblib.handlers import BirbHandlers, CookResult
@@ -24,6 +24,7 @@ __all__ = [
     "BirbBento",
     "BirbHandlers",
     "CookResult",
+    "Manifest",
     "NoBackendAvailable",
     "Stage",
     "dispatch",

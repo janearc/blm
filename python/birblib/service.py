@@ -13,32 +13,25 @@ import logging
 import threading
 from pathlib import Path
 
-from bento.v1 import bento_pb2
-from good_citizen import fsm, watcher
+from good_citizen import watcher
 from good_citizen import emit as _emit
 
-from birblib.bento import BirbBento
+from birblib.bento import Manifest
+from birblib.driver import _pb, _walk
 
 logger = logging.getLogger(__name__)
-
-_TERMINAL = {bento_pb2.BENTO_STATE_DONE, bento_pb2.BENTO_STATE_FAILED}
 
 
 # --- driving a bento with the REAL sidecar emit (the daemon/http path) ------------
 
-def drive(handlers, bento, sidecar_url=None) -> dict | None:
+def drive(handlers, bento, sidecar_url=None) -> Manifest | None:
     # step a bento to a terminal state, relaying each transition to the Go sidecar (the
-    # bus). unlike driver.run (the CLI, which raises on FAILED so a shell sees the error),
-    # this returns the manifest and never raises on a FAILED bento -- a daemon logs the
-    # outcome and stays up for the next file. an unexpected exception still propagates so
-    # the watcher's per-file guard can catch it.
-    pb = bento.pb if isinstance(bento, BirbBento) else bento
-    emitter = _emit.sidecar_emitter(sidecar_url)
-    while pb.state not in _TERMINAL:
-        prev = pb.state
-        fsm.step(handlers, emitter, pb)
-        if pb.state == prev:
-            break
+    # bus). shares the FSM step-loop with driver.run via _walk; unlike driver.run (the CLI,
+    # which raises on FAILED so a shell sees the error), this returns the manifest and never
+    # raises on a FAILED bento -- a daemon logs the outcome and stays up for the next file.
+    # an unexpected exception still propagates so the watcher's per-file guard can catch it.
+    pb = _pb(bento)
+    _walk(handlers, pb, _emit.sidecar_emitter(sidecar_url))
     return handlers.manifest
 
 
@@ -63,7 +56,7 @@ def serve_inbox(
         if manifest is not None:
             logger.info(
                 "birblib: %s -> %s (ok=%s)",
-                Path(path).name, manifest.get("artifact"), manifest.get("ok"),
+                Path(path).name, manifest.artifact, manifest.ok,
             )
 
     watcher.watch(inbox, _handle, suffixes=suffixes, interval=interval)
@@ -71,11 +64,12 @@ def serve_inbox(
 
 # --- the HTTP surface (async submit + poll + artifact serving) --------------------
 
-def read_manifest(bentos_root, bento_id: str) -> dict | None:
+def read_manifest(bentos_root, bento_id: str) -> Manifest | None:
     # the on-disk manifest for a bento, or None if it has not been written yet (the job is
-    # still running) -- the manifest IS the job record on the local path.
+    # still running) -- the manifest IS the job record on the local path. parsed back into
+    # the typed model, so the boundary is typed on read as well as on write.
     path = Path(bentos_root) / bento_id / "manifest.json"
-    return json.loads(path.read_text()) if path.is_file() else None
+    return Manifest.from_dict(json.loads(path.read_text())) if path.is_file() else None
 
 
 def _safe_artifact_path(bentos_root, bento_id: str, name: str) -> Path | None:
@@ -91,10 +85,19 @@ def _safe_artifact_path(bentos_root, bento_id: str, name: str) -> Path | None:
 
 def build_app(*, name, bentos_root, make_handlers, make_bento, sidecar_url=None):
     # build the birb's HTTP app: /health, 202 submit (POST /jobs) + poll (GET /jobs/{id}),
-    # and artifact serving with the traversal guard. submit NEVER renders inline -- it
-    # builds the bento (so the id is known), returns 202 with that id, and drives the work
-    # on a background thread; the caller polls. the in-memory thread is the local runner;
-    # the durable record is the on-disk bento + manifest (and the bus, via the emit).
+    # and artifact serving with the traversal guard.
+    #
+    # SCOPE -- READ THIS: POST /jobs here is a SINGLE-NODE / LOCAL-DEV affordance, NOT the
+    # fleet submit path. It persists the NOTICED bento (durable on disk) and then drives it
+    # on an in-process background thread; if this instance dies mid-job, the in-flight work
+    # is NOT resumed by another instance. That is a pet, and the mesh exists to avoid pets.
+    #
+    # The FLEET submit path is BUS-ENQUEUE: persist the NOTICED bento, emit its
+    # BentoLifecycleEvent(NOTICED), return 202, and do NO in-process work -- a bus worker
+    # consuming NOTICED drives the FSM, and a worker death is recovered by redelivery (the
+    # same resilience serve_inbox already has via the inbox + idempotent reprocess). When an
+    # HTTP-job worker exists, this submit becomes persist-emit-return and the thread is
+    # deleted. Until then, use this for local dev only.
     from fastapi import FastAPI, HTTPException
     from fastapi.responses import FileResponse
 
@@ -106,8 +109,13 @@ def build_app(*, name, bentos_root, make_handlers, make_bento, sidecar_url=None)
 
     @app.post("/jobs", status_code=202)
     def submit(request: dict):
+        # single-node/local-dev (see build_app's banner): persist the NOTICED bento so the
+        # record is durable the instant we 202, THEN drive it on a background thread. The
+        # fleet path replaces the thread with a NOTICED emit a bus worker consumes.
         bento = make_bento(request)
         bento_id = bento.pb.id
+        bento.scaffold()
+        bento.persist()
         handlers = make_handlers()
 
         def _run():
@@ -127,8 +135,8 @@ def build_app(*, name, bentos_root, make_handlers, make_bento, sidecar_url=None)
                 return {"status": "running", "bento_id": bento_id}
             raise HTTPException(status_code=404, detail="no such job")
         return {
-            "status": "done" if manifest["ok"] else manifest["state"].lower(),
-            "manifest": manifest,
+            "status": "done" if manifest.ok else manifest.state.lower(),
+            "manifest": manifest.to_dict(),
         }
 
     @app.get("/artifacts/{bento_id}/{name:path}")
@@ -143,15 +151,15 @@ def build_app(*, name, bentos_root, make_handlers, make_bento, sidecar_url=None)
 
 # --- the CLI ACK ------------------------------------------------------------------
 
-def ack(manifest: dict, message: str = "") -> dict:
+def ack(manifest: Manifest, message: str = "") -> dict:
     # the JSON a birb's CLI prints: an ACK of where the result landed, not the bytes. it
     # is json-by-default (a birb is a good agent-citizen) and reports ok + the artifact
     # path, so an agent caller can find the output and know whether it worked.
     out = {
-        "status": "ok" if manifest.get("ok") else "incomplete",
-        "bento_id": manifest.get("bento_id"),
-        "state": manifest.get("state"),
-        "artifact": manifest.get("artifact"),
+        "status": "ok" if manifest.ok else "incomplete",
+        "bento_id": manifest.bento_id,
+        "state": manifest.state,
+        "artifact": manifest.artifact,
     }
     if message:
         out["message"] = message

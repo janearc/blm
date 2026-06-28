@@ -62,6 +62,15 @@ def test_none_available_raises_with_the_decision_tree():
     with pytest.raises(NoBackendAvailable) as ei:
         dispatch([a, b])
     assert ei.value.detail == {"backend": None, "tried": {"a": "down", "b": "not pulled"}}
+    assert "a (down)" in str(ei.value) and "b (not pulled)" in str(ei.value)
+
+
+def test_empty_backend_set_raises_with_none_probed_message():
+    # the dead-`or` regression: an empty set must not yield a bare trailing-colon message.
+    with pytest.raises(NoBackendAvailable) as ei:
+        dispatch([])
+    assert ei.value.detail == {"backend": None, "tried": {}}
+    assert str(ei.value) == "no backend available: <none probed>"
 
 
 def test_run_forwards_args_and_kwargs():
