@@ -15,6 +15,7 @@ syntax = "proto3";
 // They land in a follow-up so the contract never carries a half-formed concept.
 package bento.v1;
 
+import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
 
 // BentoState is the lifecycle a bento (the unit of work) flows through. The state
@@ -123,4 +124,31 @@ message BentoLifecycleEvent {
   google.protobuf.Timestamp finished_at = 8;
   // Set on FAILED.
   string error_message = 9;
+}
+
+// BentoManifest is the DERIVED view of a finished bento -- where the result is and whether
+// it worked -- as it lands on disk and crosses the CLI/HTTP edge. It is NOT the wire SOT
+// (Bento is); it is the marked PROMOTION TARGET for birblib's manifest record, declared
+// here ADDITIVELY (it touches nothing else) so the on-disk shape can travel the mesh later
+// without a migration. No handler emits it yet -- birblib still writes the dataclass view;
+// this is the seam, not the wiring. The field set and names mirror that dataclass exactly,
+// so its protojson loads straight into this message.
+message BentoManifest {
+  // The bento's guid.
+  string bento_id = 1;
+  // The bento's kind (namespaced: image.generate, audio.ingest, ...).
+  string kind = 2;
+  // The single success signal: true iff state == DONE.
+  bool ok = 3;
+  // The terminal BentoState NAME (DONE / PARTIAL / FAILED), not the enum -- a manifest is
+  // read by humans and agents, and the name is the stable, legible token.
+  string state = 4;
+  // The primary output's location, or empty if the run produced none.
+  string artifact = 5;
+  // The resolved request the run was built from (free-form per kind).
+  google.protobuf.Struct params = 6;
+  // Per-stage wall/cpu timing.
+  google.protobuf.Struct stats = 7;
+  // Pipeline-specific, namespaced fields (degrade reason, dispatcher decision tree, error).
+  google.protobuf.Struct detail = 8;
 }

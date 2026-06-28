@@ -1,5 +1,6 @@
 import datetime
 
+from google.protobuf import struct_pb2 as _struct_pb2
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from google.protobuf.internal import containers as _containers
 from google.protobuf.internal import enum_type_wrapper as _enum_type_wrapper
@@ -107,3 +108,23 @@ class BentoLifecycleEvent(_message.Message):
     finished_at: _timestamp_pb2.Timestamp
     error_message: str
     def __init__(self, event_id: _Optional[str] = ..., trace_id: _Optional[str] = ..., bento_id: _Optional[str] = ..., bento_kind: _Optional[str] = ..., state: _Optional[_Union[BentoState, str]] = ..., handler: _Optional[str] = ..., started_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., finished_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., error_message: _Optional[str] = ...) -> None: ...
+
+class BentoManifest(_message.Message):
+    __slots__ = ("bento_id", "kind", "ok", "state", "artifact", "params", "stats", "detail")
+    BENTO_ID_FIELD_NUMBER: _ClassVar[int]
+    KIND_FIELD_NUMBER: _ClassVar[int]
+    OK_FIELD_NUMBER: _ClassVar[int]
+    STATE_FIELD_NUMBER: _ClassVar[int]
+    ARTIFACT_FIELD_NUMBER: _ClassVar[int]
+    PARAMS_FIELD_NUMBER: _ClassVar[int]
+    STATS_FIELD_NUMBER: _ClassVar[int]
+    DETAIL_FIELD_NUMBER: _ClassVar[int]
+    bento_id: str
+    kind: str
+    ok: bool
+    state: str
+    artifact: str
+    params: _struct_pb2.Struct
+    stats: _struct_pb2.Struct
+    detail: _struct_pb2.Struct
+    def __init__(self, bento_id: _Optional[str] = ..., kind: _Optional[str] = ..., ok: _Optional[bool] = ..., state: _Optional[str] = ..., artifact: _Optional[str] = ..., params: _Optional[_Union[_struct_pb2.Struct, _Mapping]] = ..., stats: _Optional[_Union[_struct_pb2.Struct, _Mapping]] = ..., detail: _Optional[_Union[_struct_pb2.Struct, _Mapping]] = ...) -> None: ...

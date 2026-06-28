@@ -41,10 +41,21 @@ class Manifest:
         # the JSON-serializable view, for write_manifest and the HTTP/CLI surfaces.
         return dataclasses.asdict(self)
 
+    # the per-field defaults from_dict falls back to. kept beside the fields so a manifest
+    # written by an older/newer birb (a field added or dropped) still loads.
+    _DEFAULTS = {
+        "bento_id": "", "kind": "", "ok": False, "state": "",
+        "artifact": None, "params": {}, "stats": {}, "detail": {},
+    }
+
     @classmethod
     def from_dict(cls, d: dict) -> "Manifest":
-        # reconstruct from an on-disk manifest.json (the typed boundary on read, too).
-        return cls(**{f.name: d[f.name] for f in dataclasses.fields(cls)})
+        # reconstruct from an on-disk manifest.json (the typed boundary on read). TOLERANT:
+        # a field the writer omitted falls to its default, and unknown keys are ignored --
+        # so a manifest from a different version round-trips without a KeyError. This is the
+        # forward-compat seam that lets the on-disk shape promote to the BentoManifest proto
+        # later without a migration.
+        return cls(**{name: d.get(name, default) for name, default in cls._DEFAULTS.items()})
 
 
 def state_name(state: int) -> str:

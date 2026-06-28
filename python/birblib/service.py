@@ -62,9 +62,16 @@ def serve_inbox(provider, make_handlers, make_bento, *, sidecar_url=None, interv
 def read_manifest(bentos_root, bento_id: str) -> Manifest | None:
     # the on-disk manifest for a bento, or None if it has not been written yet (the job is
     # still running) -- the manifest IS the job record on the local path. parsed back into
-    # the typed model, so the boundary is typed on read as well as on write.
+    # the typed model, so the boundary is typed on read as well as on write. atomic writes
+    # mean a reader never sees a torn file; even so, a truncated/partial read is treated as
+    # "not yet readable" (None), never a JSONDecodeError surfacing to a poll.
     path = Path(bentos_root) / bento_id / "manifest.json"
-    return Manifest.from_dict(json.loads(path.read_text())) if path.is_file() else None
+    if not path.is_file():
+        return None
+    try:
+        return Manifest.from_dict(json.loads(path.read_text()))
+    except (json.JSONDecodeError, ValueError):
+        return None
 
 
 def _safe_artifact_path(bentos_root, bento_id: str, name: str) -> Path | None:

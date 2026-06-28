@@ -23,6 +23,7 @@ package bentov1
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	structpb "google.golang.org/protobuf/types/known/structpb"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
@@ -550,11 +551,127 @@ func (x *BentoLifecycleEvent) GetErrorMessage() string {
 	return ""
 }
 
+// BentoManifest is the DERIVED view of a finished bento -- where the result is and whether
+// it worked -- as it lands on disk and crosses the CLI/HTTP edge. It is NOT the wire SOT
+// (Bento is); it is the marked PROMOTION TARGET for birblib's manifest record, declared
+// here ADDITIVELY (it touches nothing else) so the on-disk shape can travel the mesh later
+// without a migration. No handler emits it yet -- birblib still writes the dataclass view;
+// this is the seam, not the wiring. The field set and names mirror that dataclass exactly,
+// so its protojson loads straight into this message.
+type BentoManifest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The bento's guid.
+	BentoId string `protobuf:"bytes,1,opt,name=bento_id,json=bentoId,proto3" json:"bento_id,omitempty"`
+	// The bento's kind (namespaced: image.generate, audio.ingest, ...).
+	Kind string `protobuf:"bytes,2,opt,name=kind,proto3" json:"kind,omitempty"`
+	// The single success signal: true iff state == DONE.
+	Ok bool `protobuf:"varint,3,opt,name=ok,proto3" json:"ok,omitempty"`
+	// The terminal BentoState NAME (DONE / PARTIAL / FAILED), not the enum -- a manifest is
+	// read by humans and agents, and the name is the stable, legible token.
+	State string `protobuf:"bytes,4,opt,name=state,proto3" json:"state,omitempty"`
+	// The primary output's location, or empty if the run produced none.
+	Artifact string `protobuf:"bytes,5,opt,name=artifact,proto3" json:"artifact,omitempty"`
+	// The resolved request the run was built from (free-form per kind).
+	Params *structpb.Struct `protobuf:"bytes,6,opt,name=params,proto3" json:"params,omitempty"`
+	// Per-stage wall/cpu timing.
+	Stats *structpb.Struct `protobuf:"bytes,7,opt,name=stats,proto3" json:"stats,omitempty"`
+	// Pipeline-specific, namespaced fields (degrade reason, dispatcher decision tree, error).
+	Detail        *structpb.Struct `protobuf:"bytes,8,opt,name=detail,proto3" json:"detail,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BentoManifest) Reset() {
+	*x = BentoManifest{}
+	mi := &file_bento_v1_bento_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BentoManifest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BentoManifest) ProtoMessage() {}
+
+func (x *BentoManifest) ProtoReflect() protoreflect.Message {
+	mi := &file_bento_v1_bento_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BentoManifest.ProtoReflect.Descriptor instead.
+func (*BentoManifest) Descriptor() ([]byte, []int) {
+	return file_bento_v1_bento_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *BentoManifest) GetBentoId() string {
+	if x != nil {
+		return x.BentoId
+	}
+	return ""
+}
+
+func (x *BentoManifest) GetKind() string {
+	if x != nil {
+		return x.Kind
+	}
+	return ""
+}
+
+func (x *BentoManifest) GetOk() bool {
+	if x != nil {
+		return x.Ok
+	}
+	return false
+}
+
+func (x *BentoManifest) GetState() string {
+	if x != nil {
+		return x.State
+	}
+	return ""
+}
+
+func (x *BentoManifest) GetArtifact() string {
+	if x != nil {
+		return x.Artifact
+	}
+	return ""
+}
+
+func (x *BentoManifest) GetParams() *structpb.Struct {
+	if x != nil {
+		return x.Params
+	}
+	return nil
+}
+
+func (x *BentoManifest) GetStats() *structpb.Struct {
+	if x != nil {
+		return x.Stats
+	}
+	return nil
+}
+
+func (x *BentoManifest) GetDetail() *structpb.Struct {
+	if x != nil {
+		return x.Detail
+	}
+	return nil
+}
+
 var File_bento_v1_bento_proto protoreflect.FileDescriptor
 
 const file_bento_v1_bento_proto_rawDesc = "" +
 	"\n" +
-	"\x14bento/v1/bento.proto\x12\bbento.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"Z\n" +
+	"\x14bento/v1/bento.proto\x12\bbento.v1\x1a\x1cgoogle/protobuf/struct.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"Z\n" +
 	"\fBanchanAsset\x12.\n" +
 	"\x04kind\x18\x01 \x01(\x0e2\x1a.bento.v1.BanchanAssetKindR\x04kind\x12\x1a\n" +
 	"\blocation\x18\x02 \x01(\tR\blocation\"\x91\x01\n" +
@@ -588,7 +705,16 @@ const file_bento_v1_bento_proto_rawDesc = "" +
 	"started_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\tstartedAt\x12;\n" +
 	"\vfinished_at\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\n" +
 	"finishedAt\x12#\n" +
-	"\rerror_message\x18\t \x01(\tR\ferrorMessage*\xe6\x01\n" +
+	"\rerror_message\x18\t \x01(\tR\ferrorMessage\"\x91\x02\n" +
+	"\rBentoManifest\x12\x19\n" +
+	"\bbento_id\x18\x01 \x01(\tR\abentoId\x12\x12\n" +
+	"\x04kind\x18\x02 \x01(\tR\x04kind\x12\x0e\n" +
+	"\x02ok\x18\x03 \x01(\bR\x02ok\x12\x14\n" +
+	"\x05state\x18\x04 \x01(\tR\x05state\x12\x1a\n" +
+	"\bartifact\x18\x05 \x01(\tR\bartifact\x12/\n" +
+	"\x06params\x18\x06 \x01(\v2\x17.google.protobuf.StructR\x06params\x12-\n" +
+	"\x05stats\x18\a \x01(\v2\x17.google.protobuf.StructR\x05stats\x12/\n" +
+	"\x06detail\x18\b \x01(\v2\x17.google.protobuf.StructR\x06detail*\xe6\x01\n" +
 	"\n" +
 	"BentoState\x12\x1b\n" +
 	"\x17BENTO_STATE_UNSPECIFIED\x10\x00\x12\x17\n" +
@@ -621,7 +747,7 @@ func file_bento_v1_bento_proto_rawDescGZIP() []byte {
 }
 
 var file_bento_v1_bento_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_bento_v1_bento_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_bento_v1_bento_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_bento_v1_bento_proto_goTypes = []any{
 	(BentoState)(0),               // 0: bento.v1.BentoState
 	(BanchanAssetKind)(0),         // 1: bento.v1.BanchanAssetKind
@@ -629,22 +755,27 @@ var file_bento_v1_bento_proto_goTypes = []any{
 	(*Banchan)(nil),               // 3: bento.v1.Banchan
 	(*Bento)(nil),                 // 4: bento.v1.Bento
 	(*BentoLifecycleEvent)(nil),   // 5: bento.v1.BentoLifecycleEvent
-	(*timestamppb.Timestamp)(nil), // 6: google.protobuf.Timestamp
+	(*BentoManifest)(nil),         // 6: bento.v1.BentoManifest
+	(*timestamppb.Timestamp)(nil), // 7: google.protobuf.Timestamp
+	(*structpb.Struct)(nil),       // 8: google.protobuf.Struct
 }
 var file_bento_v1_bento_proto_depIdxs = []int32{
-	1, // 0: bento.v1.BanchanAsset.kind:type_name -> bento.v1.BanchanAssetKind
-	2, // 1: bento.v1.Banchan.assets:type_name -> bento.v1.BanchanAsset
-	0, // 2: bento.v1.Bento.state:type_name -> bento.v1.BentoState
-	6, // 3: bento.v1.Bento.created_at:type_name -> google.protobuf.Timestamp
-	3, // 4: bento.v1.Bento.banchans:type_name -> bento.v1.Banchan
-	0, // 5: bento.v1.BentoLifecycleEvent.state:type_name -> bento.v1.BentoState
-	6, // 6: bento.v1.BentoLifecycleEvent.started_at:type_name -> google.protobuf.Timestamp
-	6, // 7: bento.v1.BentoLifecycleEvent.finished_at:type_name -> google.protobuf.Timestamp
-	8, // [8:8] is the sub-list for method output_type
-	8, // [8:8] is the sub-list for method input_type
-	8, // [8:8] is the sub-list for extension type_name
-	8, // [8:8] is the sub-list for extension extendee
-	0, // [0:8] is the sub-list for field type_name
+	1,  // 0: bento.v1.BanchanAsset.kind:type_name -> bento.v1.BanchanAssetKind
+	2,  // 1: bento.v1.Banchan.assets:type_name -> bento.v1.BanchanAsset
+	0,  // 2: bento.v1.Bento.state:type_name -> bento.v1.BentoState
+	7,  // 3: bento.v1.Bento.created_at:type_name -> google.protobuf.Timestamp
+	3,  // 4: bento.v1.Bento.banchans:type_name -> bento.v1.Banchan
+	0,  // 5: bento.v1.BentoLifecycleEvent.state:type_name -> bento.v1.BentoState
+	7,  // 6: bento.v1.BentoLifecycleEvent.started_at:type_name -> google.protobuf.Timestamp
+	7,  // 7: bento.v1.BentoLifecycleEvent.finished_at:type_name -> google.protobuf.Timestamp
+	8,  // 8: bento.v1.BentoManifest.params:type_name -> google.protobuf.Struct
+	8,  // 9: bento.v1.BentoManifest.stats:type_name -> google.protobuf.Struct
+	8,  // 10: bento.v1.BentoManifest.detail:type_name -> google.protobuf.Struct
+	11, // [11:11] is the sub-list for method output_type
+	11, // [11:11] is the sub-list for method input_type
+	11, // [11:11] is the sub-list for extension type_name
+	11, // [11:11] is the sub-list for extension extendee
+	0,  // [0:11] is the sub-list for field type_name
 }
 
 func init() { file_bento_v1_bento_proto_init() }
@@ -658,7 +789,7 @@ func file_bento_v1_bento_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_bento_v1_bento_proto_rawDesc), len(file_bento_v1_bento_proto_rawDesc)),
 			NumEnums:      2,
-			NumMessages:   4,
+			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
