@@ -180,6 +180,60 @@ func (x *GetRequest) GetRefKey() int64 {
 	return 0
 }
 
+// GetResponse carries the requested cell. found is how a read says "no such cell":
+// a miss is found=false with no body, not an error -- the call still succeeds.
+type GetResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Cell          *Cell                  `protobuf:"bytes,1,opt,name=cell,proto3" json:"cell,omitempty"`
+	Found         bool                   `protobuf:"varint,2,opt,name=found,proto3" json:"found,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetResponse) Reset() {
+	*x = GetResponse{}
+	mi := &file_dataprovider_v1_data_provider_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetResponse) ProtoMessage() {}
+
+func (x *GetResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_dataprovider_v1_data_provider_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetResponse.ProtoReflect.Descriptor instead.
+func (*GetResponse) Descriptor() ([]byte, []int) {
+	return file_dataprovider_v1_data_provider_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *GetResponse) GetCell() *Cell {
+	if x != nil {
+		return x.Cell
+	}
+	return nil
+}
+
+func (x *GetResponse) GetFound() bool {
+	if x != nil {
+		return x.Found
+	}
+	return false
+}
+
 // GetLatestRequest fetches the latest cell for (row_key, column) -- the highest ref_key.
 type GetLatestRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -192,7 +246,7 @@ type GetLatestRequest struct {
 
 func (x *GetLatestRequest) Reset() {
 	*x = GetLatestRequest{}
-	mi := &file_dataprovider_v1_data_provider_proto_msgTypes[2]
+	mi := &file_dataprovider_v1_data_provider_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -204,7 +258,7 @@ func (x *GetLatestRequest) String() string {
 func (*GetLatestRequest) ProtoMessage() {}
 
 func (x *GetLatestRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_dataprovider_v1_data_provider_proto_msgTypes[2]
+	mi := &file_dataprovider_v1_data_provider_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -217,7 +271,7 @@ func (x *GetLatestRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetLatestRequest.ProtoReflect.Descriptor instead.
 func (*GetLatestRequest) Descriptor() ([]byte, []int) {
-	return file_dataprovider_v1_data_provider_proto_rawDescGZIP(), []int{2}
+	return file_dataprovider_v1_data_provider_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *GetLatestRequest) GetNamespace() string {
@@ -241,8 +295,64 @@ func (x *GetLatestRequest) GetColumn() string {
 	return ""
 }
 
+// GetLatestResponse carries the latest cell. found is how a read says "no such cell":
+// a miss is found=false with no body, not an error -- the call still succeeds.
+type GetLatestResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Cell          *Cell                  `protobuf:"bytes,1,opt,name=cell,proto3" json:"cell,omitempty"`
+	Found         bool                   `protobuf:"varint,2,opt,name=found,proto3" json:"found,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetLatestResponse) Reset() {
+	*x = GetLatestResponse{}
+	mi := &file_dataprovider_v1_data_provider_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetLatestResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetLatestResponse) ProtoMessage() {}
+
+func (x *GetLatestResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_dataprovider_v1_data_provider_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetLatestResponse.ProtoReflect.Descriptor instead.
+func (*GetLatestResponse) Descriptor() ([]byte, []int) {
+	return file_dataprovider_v1_data_provider_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *GetLatestResponse) GetCell() *Cell {
+	if x != nil {
+		return x.Cell
+	}
+	return nil
+}
+
+func (x *GetLatestResponse) GetFound() bool {
+	if x != nil {
+		return x.Found
+	}
+	return false
+}
+
 // PutRequest appends a cell. The caller supplies ref_key (the version); writes are
-// append-only, so a Put never overwrites an existing cell -- it adds one.
+// append-only, so a Put never overwrites an existing cell -- it adds one. A Put at an
+// existing (row_key, column, ref_key) is rejected if the body differs -- immutability
+// wins; re-Putting the identical cell is a no-op (idempotent retry).
 type PutRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Namespace     string                 `protobuf:"bytes,1,opt,name=namespace,proto3" json:"namespace,omitempty"`
@@ -256,7 +366,7 @@ type PutRequest struct {
 
 func (x *PutRequest) Reset() {
 	*x = PutRequest{}
-	mi := &file_dataprovider_v1_data_provider_proto_msgTypes[3]
+	mi := &file_dataprovider_v1_data_provider_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -268,7 +378,7 @@ func (x *PutRequest) String() string {
 func (*PutRequest) ProtoMessage() {}
 
 func (x *PutRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_dataprovider_v1_data_provider_proto_msgTypes[3]
+	mi := &file_dataprovider_v1_data_provider_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -281,7 +391,7 @@ func (x *PutRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PutRequest.ProtoReflect.Descriptor instead.
 func (*PutRequest) Descriptor() ([]byte, []int) {
-	return file_dataprovider_v1_data_provider_proto_rawDescGZIP(), []int{3}
+	return file_dataprovider_v1_data_provider_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *PutRequest) GetNamespace() string {
@@ -331,7 +441,7 @@ type PutResponse struct {
 
 func (x *PutResponse) Reset() {
 	*x = PutResponse{}
-	mi := &file_dataprovider_v1_data_provider_proto_msgTypes[4]
+	mi := &file_dataprovider_v1_data_provider_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -343,7 +453,7 @@ func (x *PutResponse) String() string {
 func (*PutResponse) ProtoMessage() {}
 
 func (x *PutResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_dataprovider_v1_data_provider_proto_msgTypes[4]
+	mi := &file_dataprovider_v1_data_provider_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -356,7 +466,7 @@ func (x *PutResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PutResponse.ProtoReflect.Descriptor instead.
 func (*PutResponse) Descriptor() ([]byte, []int) {
-	return file_dataprovider_v1_data_provider_proto_rawDescGZIP(), []int{4}
+	return file_dataprovider_v1_data_provider_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *PutResponse) GetRowKey() string {
@@ -385,19 +495,21 @@ func (x *PutResponse) GetRefKey() int64 {
 // append log. predicates are matched against the indexed fields. shard_hint is optional:
 // Schemaless mandates a shard key on a query; this contract does not.
 type QueryRequest struct {
-	state         protoimpl.MessageState     `protogen:"open.v1"`
-	Namespace     string                     `protobuf:"bytes,1,opt,name=namespace,proto3" json:"namespace,omitempty"`
-	Index         string                     `protobuf:"bytes,2,opt,name=index,proto3" json:"index,omitempty"`
-	Predicates    map[string]*structpb.Value `protobuf:"bytes,3,rep,name=predicates,proto3" json:"predicates,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	ShardHint     string                     `protobuf:"bytes,4,opt,name=shard_hint,json=shardHint,proto3" json:"shard_hint,omitempty"`
-	Limit         uint32                     `protobuf:"varint,5,opt,name=limit,proto3" json:"limit,omitempty"`
+	state      protoimpl.MessageState     `protogen:"open.v1"`
+	Namespace  string                     `protobuf:"bytes,1,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	Index      string                     `protobuf:"bytes,2,opt,name=index,proto3" json:"index,omitempty"`
+	Predicates map[string]*structpb.Value `protobuf:"bytes,3,rep,name=predicates,proto3" json:"predicates,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	// shard_hint is provisional: an implementation-specific routing hint, not a contract
+	// guarantee. It may move to a transport header later.
+	ShardHint     string `protobuf:"bytes,4,opt,name=shard_hint,json=shardHint,proto3" json:"shard_hint,omitempty"`
+	Limit         uint32 `protobuf:"varint,5,opt,name=limit,proto3" json:"limit,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *QueryRequest) Reset() {
 	*x = QueryRequest{}
-	mi := &file_dataprovider_v1_data_provider_proto_msgTypes[5]
+	mi := &file_dataprovider_v1_data_provider_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -409,7 +521,7 @@ func (x *QueryRequest) String() string {
 func (*QueryRequest) ProtoMessage() {}
 
 func (x *QueryRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_dataprovider_v1_data_provider_proto_msgTypes[5]
+	mi := &file_dataprovider_v1_data_provider_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -422,7 +534,7 @@ func (x *QueryRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use QueryRequest.ProtoReflect.Descriptor instead.
 func (*QueryRequest) Descriptor() ([]byte, []int) {
-	return file_dataprovider_v1_data_provider_proto_rawDescGZIP(), []int{5}
+	return file_dataprovider_v1_data_provider_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *QueryRequest) GetNamespace() string {
@@ -462,15 +574,18 @@ func (x *QueryRequest) GetLimit() uint32 {
 
 // QueryResponse returns the cells matching the query.
 type QueryResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Rows          []*Cell                `protobuf:"bytes,1,rep,name=rows,proto3" json:"rows,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	Rows  []*Cell                `protobuf:"bytes,1,rep,name=rows,proto3" json:"rows,omitempty"`
+	// next_page_token is reserved for pagination -- no behavior yet. It is present so the
+	// field number is claimed and Query is not locked into a single page.
+	NextPageToken string `protobuf:"bytes,2,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *QueryResponse) Reset() {
 	*x = QueryResponse{}
-	mi := &file_dataprovider_v1_data_provider_proto_msgTypes[6]
+	mi := &file_dataprovider_v1_data_provider_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -482,7 +597,7 @@ func (x *QueryResponse) String() string {
 func (*QueryResponse) ProtoMessage() {}
 
 func (x *QueryResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_dataprovider_v1_data_provider_proto_msgTypes[6]
+	mi := &file_dataprovider_v1_data_provider_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -495,7 +610,7 @@ func (x *QueryResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use QueryResponse.ProtoReflect.Descriptor instead.
 func (*QueryResponse) Descriptor() ([]byte, []int) {
-	return file_dataprovider_v1_data_provider_proto_rawDescGZIP(), []int{6}
+	return file_dataprovider_v1_data_provider_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *QueryResponse) GetRows() []*Cell {
@@ -503,6 +618,13 @@ func (x *QueryResponse) GetRows() []*Cell {
 		return x.Rows
 	}
 	return nil
+}
+
+func (x *QueryResponse) GetNextPageToken() string {
+	if x != nil {
+		return x.NextPageToken
+	}
+	return ""
 }
 
 var File_dataprovider_v1_data_provider_proto protoreflect.FileDescriptor
@@ -522,11 +644,17 @@ const file_dataprovider_v1_data_provider_proto_rawDesc = "" +
 	"\tnamespace\x18\x01 \x01(\tR\tnamespace\x12\x17\n" +
 	"\arow_key\x18\x02 \x01(\tR\x06rowKey\x12\x16\n" +
 	"\x06column\x18\x03 \x01(\tR\x06column\x12\x17\n" +
-	"\aref_key\x18\x04 \x01(\x03R\x06refKey\"a\n" +
+	"\aref_key\x18\x04 \x01(\x03R\x06refKey\"N\n" +
+	"\vGetResponse\x12)\n" +
+	"\x04cell\x18\x01 \x01(\v2\x15.dataprovider.v1.CellR\x04cell\x12\x14\n" +
+	"\x05found\x18\x02 \x01(\bR\x05found\"a\n" +
 	"\x10GetLatestRequest\x12\x1c\n" +
 	"\tnamespace\x18\x01 \x01(\tR\tnamespace\x12\x17\n" +
 	"\arow_key\x18\x02 \x01(\tR\x06rowKey\x12\x16\n" +
-	"\x06column\x18\x03 \x01(\tR\x06column\"\xa1\x01\n" +
+	"\x06column\x18\x03 \x01(\tR\x06column\"T\n" +
+	"\x11GetLatestResponse\x12)\n" +
+	"\x04cell\x18\x01 \x01(\v2\x15.dataprovider.v1.CellR\x04cell\x12\x14\n" +
+	"\x05found\x18\x02 \x01(\bR\x05found\"\xa1\x01\n" +
 	"\n" +
 	"PutRequest\x12\x1c\n" +
 	"\tnamespace\x18\x01 \x01(\tR\tnamespace\x12\x17\n" +
@@ -549,12 +677,13 @@ const file_dataprovider_v1_data_provider_proto_rawDesc = "" +
 	"\x05limit\x18\x05 \x01(\rR\x05limit\x1aU\n" +
 	"\x0fPredicatesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12,\n" +
-	"\x05value\x18\x02 \x01(\v2\x16.google.protobuf.ValueR\x05value:\x028\x01\":\n" +
+	"\x05value\x18\x02 \x01(\v2\x16.google.protobuf.ValueR\x05value:\x028\x01\"b\n" +
 	"\rQueryResponse\x12)\n" +
-	"\x04rows\x18\x01 \x03(\v2\x15.dataprovider.v1.CellR\x04rows2\x9a\x02\n" +
-	"\fDataProvider\x129\n" +
-	"\x03Get\x12\x1b.dataprovider.v1.GetRequest\x1a\x15.dataprovider.v1.Cell\x12E\n" +
-	"\tGetLatest\x12!.dataprovider.v1.GetLatestRequest\x1a\x15.dataprovider.v1.Cell\x12@\n" +
+	"\x04rows\x18\x01 \x03(\v2\x15.dataprovider.v1.CellR\x04rows\x12&\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken2\xae\x02\n" +
+	"\fDataProvider\x12@\n" +
+	"\x03Get\x12\x1b.dataprovider.v1.GetRequest\x1a\x1c.dataprovider.v1.GetResponse\x12R\n" +
+	"\tGetLatest\x12!.dataprovider.v1.GetLatestRequest\x1a\".dataprovider.v1.GetLatestResponse\x12@\n" +
 	"\x03Put\x12\x1b.dataprovider.v1.PutRequest\x1a\x1c.dataprovider.v1.PutResponse\x12F\n" +
 	"\x05Query\x12\x1d.dataprovider.v1.QueryRequest\x1a\x1e.dataprovider.v1.QueryResponseB\xc3\x01\n" +
 	"\x13com.dataprovider.v1B\x11DataProviderProtoP\x01Z<github.com/janearc/blm/gen/go/dataprovider/v1;dataproviderv1\xa2\x02\x03DXX\xaa\x02\x0fDataprovider.V1\xca\x02\x0fDataprovider\\V1\xe2\x02\x1bDataprovider\\V1\\GPBMetadata\xea\x02\x10Dataprovider::V1b\x06proto3"
@@ -571,40 +700,44 @@ func file_dataprovider_v1_data_provider_proto_rawDescGZIP() []byte {
 	return file_dataprovider_v1_data_provider_proto_rawDescData
 }
 
-var file_dataprovider_v1_data_provider_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_dataprovider_v1_data_provider_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_dataprovider_v1_data_provider_proto_goTypes = []any{
 	(*Cell)(nil),                  // 0: dataprovider.v1.Cell
 	(*GetRequest)(nil),            // 1: dataprovider.v1.GetRequest
-	(*GetLatestRequest)(nil),      // 2: dataprovider.v1.GetLatestRequest
-	(*PutRequest)(nil),            // 3: dataprovider.v1.PutRequest
-	(*PutResponse)(nil),           // 4: dataprovider.v1.PutResponse
-	(*QueryRequest)(nil),          // 5: dataprovider.v1.QueryRequest
-	(*QueryResponse)(nil),         // 6: dataprovider.v1.QueryResponse
-	nil,                           // 7: dataprovider.v1.QueryRequest.PredicatesEntry
-	(*structpb.Struct)(nil),       // 8: google.protobuf.Struct
-	(*timestamppb.Timestamp)(nil), // 9: google.protobuf.Timestamp
-	(*structpb.Value)(nil),        // 10: google.protobuf.Value
+	(*GetResponse)(nil),           // 2: dataprovider.v1.GetResponse
+	(*GetLatestRequest)(nil),      // 3: dataprovider.v1.GetLatestRequest
+	(*GetLatestResponse)(nil),     // 4: dataprovider.v1.GetLatestResponse
+	(*PutRequest)(nil),            // 5: dataprovider.v1.PutRequest
+	(*PutResponse)(nil),           // 6: dataprovider.v1.PutResponse
+	(*QueryRequest)(nil),          // 7: dataprovider.v1.QueryRequest
+	(*QueryResponse)(nil),         // 8: dataprovider.v1.QueryResponse
+	nil,                           // 9: dataprovider.v1.QueryRequest.PredicatesEntry
+	(*structpb.Struct)(nil),       // 10: google.protobuf.Struct
+	(*timestamppb.Timestamp)(nil), // 11: google.protobuf.Timestamp
+	(*structpb.Value)(nil),        // 12: google.protobuf.Value
 }
 var file_dataprovider_v1_data_provider_proto_depIdxs = []int32{
-	8,  // 0: dataprovider.v1.Cell.body:type_name -> google.protobuf.Struct
-	9,  // 1: dataprovider.v1.Cell.created_at:type_name -> google.protobuf.Timestamp
-	8,  // 2: dataprovider.v1.PutRequest.body:type_name -> google.protobuf.Struct
-	7,  // 3: dataprovider.v1.QueryRequest.predicates:type_name -> dataprovider.v1.QueryRequest.PredicatesEntry
-	0,  // 4: dataprovider.v1.QueryResponse.rows:type_name -> dataprovider.v1.Cell
-	10, // 5: dataprovider.v1.QueryRequest.PredicatesEntry.value:type_name -> google.protobuf.Value
-	1,  // 6: dataprovider.v1.DataProvider.Get:input_type -> dataprovider.v1.GetRequest
-	2,  // 7: dataprovider.v1.DataProvider.GetLatest:input_type -> dataprovider.v1.GetLatestRequest
-	3,  // 8: dataprovider.v1.DataProvider.Put:input_type -> dataprovider.v1.PutRequest
-	5,  // 9: dataprovider.v1.DataProvider.Query:input_type -> dataprovider.v1.QueryRequest
-	0,  // 10: dataprovider.v1.DataProvider.Get:output_type -> dataprovider.v1.Cell
-	0,  // 11: dataprovider.v1.DataProvider.GetLatest:output_type -> dataprovider.v1.Cell
-	4,  // 12: dataprovider.v1.DataProvider.Put:output_type -> dataprovider.v1.PutResponse
-	6,  // 13: dataprovider.v1.DataProvider.Query:output_type -> dataprovider.v1.QueryResponse
-	10, // [10:14] is the sub-list for method output_type
-	6,  // [6:10] is the sub-list for method input_type
-	6,  // [6:6] is the sub-list for extension type_name
-	6,  // [6:6] is the sub-list for extension extendee
-	0,  // [0:6] is the sub-list for field type_name
+	10, // 0: dataprovider.v1.Cell.body:type_name -> google.protobuf.Struct
+	11, // 1: dataprovider.v1.Cell.created_at:type_name -> google.protobuf.Timestamp
+	0,  // 2: dataprovider.v1.GetResponse.cell:type_name -> dataprovider.v1.Cell
+	0,  // 3: dataprovider.v1.GetLatestResponse.cell:type_name -> dataprovider.v1.Cell
+	10, // 4: dataprovider.v1.PutRequest.body:type_name -> google.protobuf.Struct
+	9,  // 5: dataprovider.v1.QueryRequest.predicates:type_name -> dataprovider.v1.QueryRequest.PredicatesEntry
+	0,  // 6: dataprovider.v1.QueryResponse.rows:type_name -> dataprovider.v1.Cell
+	12, // 7: dataprovider.v1.QueryRequest.PredicatesEntry.value:type_name -> google.protobuf.Value
+	1,  // 8: dataprovider.v1.DataProvider.Get:input_type -> dataprovider.v1.GetRequest
+	3,  // 9: dataprovider.v1.DataProvider.GetLatest:input_type -> dataprovider.v1.GetLatestRequest
+	5,  // 10: dataprovider.v1.DataProvider.Put:input_type -> dataprovider.v1.PutRequest
+	7,  // 11: dataprovider.v1.DataProvider.Query:input_type -> dataprovider.v1.QueryRequest
+	2,  // 12: dataprovider.v1.DataProvider.Get:output_type -> dataprovider.v1.GetResponse
+	4,  // 13: dataprovider.v1.DataProvider.GetLatest:output_type -> dataprovider.v1.GetLatestResponse
+	6,  // 14: dataprovider.v1.DataProvider.Put:output_type -> dataprovider.v1.PutResponse
+	8,  // 15: dataprovider.v1.DataProvider.Query:output_type -> dataprovider.v1.QueryResponse
+	12, // [12:16] is the sub-list for method output_type
+	8,  // [8:12] is the sub-list for method input_type
+	8,  // [8:8] is the sub-list for extension type_name
+	8,  // [8:8] is the sub-list for extension extendee
+	0,  // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_dataprovider_v1_data_provider_proto_init() }
@@ -618,7 +751,7 @@ func file_dataprovider_v1_data_provider_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_dataprovider_v1_data_provider_proto_rawDesc), len(file_dataprovider_v1_data_provider_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   8,
+			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

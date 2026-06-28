@@ -36,6 +36,14 @@ class GetRequest(_message.Message):
     ref_key: int
     def __init__(self, namespace: _Optional[str] = ..., row_key: _Optional[str] = ..., column: _Optional[str] = ..., ref_key: _Optional[int] = ...) -> None: ...
 
+class GetResponse(_message.Message):
+    __slots__ = ("cell", "found")
+    CELL_FIELD_NUMBER: _ClassVar[int]
+    FOUND_FIELD_NUMBER: _ClassVar[int]
+    cell: Cell
+    found: bool
+    def __init__(self, cell: _Optional[_Union[Cell, _Mapping]] = ..., found: _Optional[bool] = ...) -> None: ...
+
 class GetLatestRequest(_message.Message):
     __slots__ = ("namespace", "row_key", "column")
     NAMESPACE_FIELD_NUMBER: _ClassVar[int]
@@ -45,6 +53,14 @@ class GetLatestRequest(_message.Message):
     row_key: str
     column: str
     def __init__(self, namespace: _Optional[str] = ..., row_key: _Optional[str] = ..., column: _Optional[str] = ...) -> None: ...
+
+class GetLatestResponse(_message.Message):
+    __slots__ = ("cell", "found")
+    CELL_FIELD_NUMBER: _ClassVar[int]
+    FOUND_FIELD_NUMBER: _ClassVar[int]
+    cell: Cell
+    found: bool
+    def __init__(self, cell: _Optional[_Union[Cell, _Mapping]] = ..., found: _Optional[bool] = ...) -> None: ...
 
 class PutRequest(_message.Message):
     __slots__ = ("namespace", "row_key", "column", "ref_key", "body")
@@ -92,7 +108,9 @@ class QueryRequest(_message.Message):
     def __init__(self, namespace: _Optional[str] = ..., index: _Optional[str] = ..., predicates: _Optional[_Mapping[str, _struct_pb2.Value]] = ..., shard_hint: _Optional[str] = ..., limit: _Optional[int] = ...) -> None: ...
 
 class QueryResponse(_message.Message):
-    __slots__ = ("rows",)
+    __slots__ = ("rows", "next_page_token")
     ROWS_FIELD_NUMBER: _ClassVar[int]
+    NEXT_PAGE_TOKEN_FIELD_NUMBER: _ClassVar[int]
     rows: _containers.RepeatedCompositeFieldContainer[Cell]
-    def __init__(self, rows: _Optional[_Iterable[_Union[Cell, _Mapping]]] = ...) -> None: ...
+    next_page_token: str
+    def __init__(self, rows: _Optional[_Iterable[_Union[Cell, _Mapping]]] = ..., next_page_token: _Optional[str] = ...) -> None: ...

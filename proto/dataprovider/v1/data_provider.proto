@@ -32,6 +32,13 @@ message GetRequest {
   int64 ref_key = 4;
 }
 
+// GetResponse carries the requested cell. found is how a read says "no such cell":
+// a miss is found=false with no body, not an error -- the call still succeeds.
+message GetResponse {
+  Cell cell = 1;
+  bool found = 2;
+}
+
 // GetLatestRequest fetches the latest cell for (row_key, column) -- the highest ref_key.
 message GetLatestRequest {
   string namespace = 1;
@@ -39,8 +46,17 @@ message GetLatestRequest {
   string column = 3;
 }
 
+// GetLatestResponse carries the latest cell. found is how a read says "no such cell":
+// a miss is found=false with no body, not an error -- the call still succeeds.
+message GetLatestResponse {
+  Cell cell = 1;
+  bool found = 2;
+}
+
 // PutRequest appends a cell. The caller supplies ref_key (the version); writes are
-// append-only, so a Put never overwrites an existing cell -- it adds one.
+// append-only, so a Put never overwrites an existing cell -- it adds one. A Put at an
+// existing (row_key, column, ref_key) is rejected if the body differs -- immutability
+// wins; re-Putting the identical cell is a no-op (idempotent retry).
 message PutRequest {
   string namespace = 1;
   string row_key = 2;
@@ -64,6 +80,8 @@ message QueryRequest {
   string namespace = 1;
   string index = 2;
   map<string, google.protobuf.Value> predicates = 3;
+  // shard_hint is provisional: an implementation-specific routing hint, not a contract
+  // guarantee. It may move to a transport header later.
   string shard_hint = 4;
   uint32 limit = 5;
 }
@@ -71,6 +89,9 @@ message QueryRequest {
 // QueryResponse returns the cells matching the query.
 message QueryResponse {
   repeated Cell rows = 1;
+  // next_page_token is reserved for pagination -- no behavior yet. It is present so the
+  // field number is claimed and Query is not locked into a single page.
+  string next_page_token = 2;
 }
 
 // DataProvider is the mesh's append-only, immutable cell store. Any service that
@@ -82,9 +103,11 @@ message QueryResponse {
 // wire's.
 service DataProvider {
   // Get returns one specific cell version, addressed by (row_key, column, ref_key).
-  rpc Get(GetRequest) returns (Cell);
+  // A miss is GetResponse.found=false, not an error.
+  rpc Get(GetRequest) returns (GetResponse);
   // GetLatest returns the highest-ref_key cell for (row_key, column).
-  rpc GetLatest(GetLatestRequest) returns (Cell);
+  // A miss is GetLatestResponse.found=false, not an error.
+  rpc GetLatest(GetLatestRequest) returns (GetLatestResponse);
   // Put appends a cell. Append-only and idempotent: the caller supplies ref_key.
   rpc Put(PutRequest) returns (PutResponse);
   // Query looks up cells by predicates over a secondary index (eventually consistent).

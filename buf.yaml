@@ -7,17 +7,11 @@ modules:
 lint:
   use:
     - STANDARD
-  # dataprovider.v1 is the mesh's first gRPC service and is modeled faithfully on
-  # Uber's Schemaless: reads return the entity (a Cell) directly rather than a wrapper,
-  # and the service is named for the contract role ("a DataProvider"), not suffixed
-  # "Service". Those are deliberate, so STANDARD's RPC-hygiene rules are excepted for
-  # this one file only -- the gate stays fully STANDARD for every other contract.
+  # dataprovider.v1's service is named for the contract role ("a DataProvider"), not
+  # suffixed "Service". That is deliberate, so SERVICE_SUFFIX is excepted for this one
+  # file only -- the gate stays fully STANDARD for every other contract and rule.
   ignore_only:
     SERVICE_SUFFIX:
-      - proto/dataprovider/v1/data_provider.proto
-    RPC_RESPONSE_STANDARD_NAME:
-      - proto/dataprovider/v1/data_provider.proto
-    RPC_REQUEST_RESPONSE_UNIQUE:
       - proto/dataprovider/v1/data_provider.proto
 breaking:
   use:

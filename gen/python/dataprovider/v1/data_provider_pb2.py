@@ -26,7 +26,7 @@ from google.protobuf import struct_pb2 as google_dot_protobuf_dot_struct__pb2
 from google.protobuf import timestamp_pb2 as google_dot_protobuf_dot_timestamp__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n#dataprovider/v1/data_provider.proto\x12\x0f\x64\x61taprovider.v1\x1a\x1cgoogle/protobuf/struct.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xb8\x01\n\x04\x43\x65ll\x12\x17\n\x07row_key\x18\x01 \x01(\tR\x06rowKey\x12\x16\n\x06\x63olumn\x18\x02 \x01(\tR\x06\x63olumn\x12\x17\n\x07ref_key\x18\x03 \x01(\x03R\x06refKey\x12+\n\x04\x62ody\x18\x04 \x01(\x0b\x32\x17.google.protobuf.StructR\x04\x62ody\x12\x39\n\ncreated_at\x18\x05 \x01(\x0b\x32\x1a.google.protobuf.TimestampR\tcreatedAt\"t\n\nGetRequest\x12\x1c\n\tnamespace\x18\x01 \x01(\tR\tnamespace\x12\x17\n\x07row_key\x18\x02 \x01(\tR\x06rowKey\x12\x16\n\x06\x63olumn\x18\x03 \x01(\tR\x06\x63olumn\x12\x17\n\x07ref_key\x18\x04 \x01(\x03R\x06refKey\"a\n\x10GetLatestRequest\x12\x1c\n\tnamespace\x18\x01 \x01(\tR\tnamespace\x12\x17\n\x07row_key\x18\x02 \x01(\tR\x06rowKey\x12\x16\n\x06\x63olumn\x18\x03 \x01(\tR\x06\x63olumn\"\xa1\x01\n\nPutRequest\x12\x1c\n\tnamespace\x18\x01 \x01(\tR\tnamespace\x12\x17\n\x07row_key\x18\x02 \x01(\tR\x06rowKey\x12\x16\n\x06\x63olumn\x18\x03 \x01(\tR\x06\x63olumn\x12\x17\n\x07ref_key\x18\x04 \x01(\x03R\x06refKey\x12+\n\x04\x62ody\x18\x05 \x01(\x0b\x32\x17.google.protobuf.StructR\x04\x62ody\"W\n\x0bPutResponse\x12\x17\n\x07row_key\x18\x01 \x01(\tR\x06rowKey\x12\x16\n\x06\x63olumn\x18\x02 \x01(\tR\x06\x63olumn\x12\x17\n\x07ref_key\x18\x03 \x01(\x03R\x06refKey\"\x9d\x02\n\x0cQueryRequest\x12\x1c\n\tnamespace\x18\x01 \x01(\tR\tnamespace\x12\x14\n\x05index\x18\x02 \x01(\tR\x05index\x12M\n\npredicates\x18\x03 \x03(\x0b\x32-.dataprovider.v1.QueryRequest.PredicatesEntryR\npredicates\x12\x1d\n\nshard_hint\x18\x04 \x01(\tR\tshardHint\x12\x14\n\x05limit\x18\x05 \x01(\rR\x05limit\x1aU\n\x0fPredicatesEntry\x12\x10\n\x03key\x18\x01 \x01(\tR\x03key\x12,\n\x05value\x18\x02 \x01(\x0b\x32\x16.google.protobuf.ValueR\x05value:\x02\x38\x01\":\n\rQueryResponse\x12)\n\x04rows\x18\x01 \x03(\x0b\x32\x15.dataprovider.v1.CellR\x04rows2\x9a\x02\n\x0c\x44\x61taProvider\x12\x39\n\x03Get\x12\x1b.dataprovider.v1.GetRequest\x1a\x15.dataprovider.v1.Cell\x12\x45\n\tGetLatest\x12!.dataprovider.v1.GetLatestRequest\x1a\x15.dataprovider.v1.Cell\x12@\n\x03Put\x12\x1b.dataprovider.v1.PutRequest\x1a\x1c.dataprovider.v1.PutResponse\x12\x46\n\x05Query\x12\x1d.dataprovider.v1.QueryRequest\x1a\x1e.dataprovider.v1.QueryResponseB\xc3\x01\n\x13\x63om.dataprovider.v1B\x11\x44\x61taProviderProtoP\x01Z<github.com/janearc/blm/gen/go/dataprovider/v1;dataproviderv1\xa2\x02\x03\x44XX\xaa\x02\x0f\x44\x61taprovider.V1\xca\x02\x0f\x44\x61taprovider\\V1\xe2\x02\x1b\x44\x61taprovider\\V1\\GPBMetadata\xea\x02\x10\x44\x61taprovider::V1b\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n#dataprovider/v1/data_provider.proto\x12\x0f\x64\x61taprovider.v1\x1a\x1cgoogle/protobuf/struct.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xb8\x01\n\x04\x43\x65ll\x12\x17\n\x07row_key\x18\x01 \x01(\tR\x06rowKey\x12\x16\n\x06\x63olumn\x18\x02 \x01(\tR\x06\x63olumn\x12\x17\n\x07ref_key\x18\x03 \x01(\x03R\x06refKey\x12+\n\x04\x62ody\x18\x04 \x01(\x0b\x32\x17.google.protobuf.StructR\x04\x62ody\x12\x39\n\ncreated_at\x18\x05 \x01(\x0b\x32\x1a.google.protobuf.TimestampR\tcreatedAt\"t\n\nGetRequest\x12\x1c\n\tnamespace\x18\x01 \x01(\tR\tnamespace\x12\x17\n\x07row_key\x18\x02 \x01(\tR\x06rowKey\x12\x16\n\x06\x63olumn\x18\x03 \x01(\tR\x06\x63olumn\x12\x17\n\x07ref_key\x18\x04 \x01(\x03R\x06refKey\"N\n\x0bGetResponse\x12)\n\x04\x63\x65ll\x18\x01 \x01(\x0b\x32\x15.dataprovider.v1.CellR\x04\x63\x65ll\x12\x14\n\x05\x66ound\x18\x02 \x01(\x08R\x05\x66ound\"a\n\x10GetLatestRequest\x12\x1c\n\tnamespace\x18\x01 \x01(\tR\tnamespace\x12\x17\n\x07row_key\x18\x02 \x01(\tR\x06rowKey\x12\x16\n\x06\x63olumn\x18\x03 \x01(\tR\x06\x63olumn\"T\n\x11GetLatestResponse\x12)\n\x04\x63\x65ll\x18\x01 \x01(\x0b\x32\x15.dataprovider.v1.CellR\x04\x63\x65ll\x12\x14\n\x05\x66ound\x18\x02 \x01(\x08R\x05\x66ound\"\xa1\x01\n\nPutRequest\x12\x1c\n\tnamespace\x18\x01 \x01(\tR\tnamespace\x12\x17\n\x07row_key\x18\x02 \x01(\tR\x06rowKey\x12\x16\n\x06\x63olumn\x18\x03 \x01(\tR\x06\x63olumn\x12\x17\n\x07ref_key\x18\x04 \x01(\x03R\x06refKey\x12+\n\x04\x62ody\x18\x05 \x01(\x0b\x32\x17.google.protobuf.StructR\x04\x62ody\"W\n\x0bPutResponse\x12\x17\n\x07row_key\x18\x01 \x01(\tR\x06rowKey\x12\x16\n\x06\x63olumn\x18\x02 \x01(\tR\x06\x63olumn\x12\x17\n\x07ref_key\x18\x03 \x01(\x03R\x06refKey\"\x9d\x02\n\x0cQueryRequest\x12\x1c\n\tnamespace\x18\x01 \x01(\tR\tnamespace\x12\x14\n\x05index\x18\x02 \x01(\tR\x05index\x12M\n\npredicates\x18\x03 \x03(\x0b\x32-.dataprovider.v1.QueryRequest.PredicatesEntryR\npredicates\x12\x1d\n\nshard_hint\x18\x04 \x01(\tR\tshardHint\x12\x14\n\x05limit\x18\x05 \x01(\rR\x05limit\x1aU\n\x0fPredicatesEntry\x12\x10\n\x03key\x18\x01 \x01(\tR\x03key\x12,\n\x05value\x18\x02 \x01(\x0b\x32\x16.google.protobuf.ValueR\x05value:\x02\x38\x01\"b\n\rQueryResponse\x12)\n\x04rows\x18\x01 \x03(\x0b\x32\x15.dataprovider.v1.CellR\x04rows\x12&\n\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken2\xae\x02\n\x0c\x44\x61taProvider\x12@\n\x03Get\x12\x1b.dataprovider.v1.GetRequest\x1a\x1c.dataprovider.v1.GetResponse\x12R\n\tGetLatest\x12!.dataprovider.v1.GetLatestRequest\x1a\".dataprovider.v1.GetLatestResponse\x12@\n\x03Put\x12\x1b.dataprovider.v1.PutRequest\x1a\x1c.dataprovider.v1.PutResponse\x12\x46\n\x05Query\x12\x1d.dataprovider.v1.QueryRequest\x1a\x1e.dataprovider.v1.QueryResponseB\xc3\x01\n\x13\x63om.dataprovider.v1B\x11\x44\x61taProviderProtoP\x01Z<github.com/janearc/blm/gen/go/dataprovider/v1;dataproviderv1\xa2\x02\x03\x44XX\xaa\x02\x0f\x44\x61taprovider.V1\xca\x02\x0f\x44\x61taprovider\\V1\xe2\x02\x1b\x44\x61taprovider\\V1\\GPBMetadata\xea\x02\x10\x44\x61taprovider::V1b\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -40,18 +40,22 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_CELL']._serialized_end=304
   _globals['_GETREQUEST']._serialized_start=306
   _globals['_GETREQUEST']._serialized_end=422
-  _globals['_GETLATESTREQUEST']._serialized_start=424
-  _globals['_GETLATESTREQUEST']._serialized_end=521
-  _globals['_PUTREQUEST']._serialized_start=524
-  _globals['_PUTREQUEST']._serialized_end=685
-  _globals['_PUTRESPONSE']._serialized_start=687
-  _globals['_PUTRESPONSE']._serialized_end=774
-  _globals['_QUERYREQUEST']._serialized_start=777
-  _globals['_QUERYREQUEST']._serialized_end=1062
-  _globals['_QUERYREQUEST_PREDICATESENTRY']._serialized_start=977
-  _globals['_QUERYREQUEST_PREDICATESENTRY']._serialized_end=1062
-  _globals['_QUERYRESPONSE']._serialized_start=1064
-  _globals['_QUERYRESPONSE']._serialized_end=1122
-  _globals['_DATAPROVIDER']._serialized_start=1125
-  _globals['_DATAPROVIDER']._serialized_end=1407
+  _globals['_GETRESPONSE']._serialized_start=424
+  _globals['_GETRESPONSE']._serialized_end=502
+  _globals['_GETLATESTREQUEST']._serialized_start=504
+  _globals['_GETLATESTREQUEST']._serialized_end=601
+  _globals['_GETLATESTRESPONSE']._serialized_start=603
+  _globals['_GETLATESTRESPONSE']._serialized_end=687
+  _globals['_PUTREQUEST']._serialized_start=690
+  _globals['_PUTREQUEST']._serialized_end=851
+  _globals['_PUTRESPONSE']._serialized_start=853
+  _globals['_PUTRESPONSE']._serialized_end=940
+  _globals['_QUERYREQUEST']._serialized_start=943
+  _globals['_QUERYREQUEST']._serialized_end=1228
+  _globals['_QUERYREQUEST_PREDICATESENTRY']._serialized_start=1143
+  _globals['_QUERYREQUEST_PREDICATESENTRY']._serialized_end=1228
+  _globals['_QUERYRESPONSE']._serialized_start=1230
+  _globals['_QUERYRESPONSE']._serialized_end=1328
+  _globals['_DATAPROVIDER']._serialized_start=1331
+  _globals['_DATAPROVIDER']._serialized_end=1633
 # @@protoc_insertion_point(module_scope)
