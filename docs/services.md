@@ -1,0 +1,100 @@
+# Services: the listener archetype (resident, queried, stateful)
+
+blm has had one citizen archetype: the pipeline -- the **watcher**. Work is pushed
+into it, it watches its inbox for churn, walks each bento through a state machine, and
+when the work is done it is done. It owns no durable store; it is, in the way that
+matters, ephemeral. That archetype is described in [pipelines.md](pipelines.md).
+
+This document describes the second archetype: the resident service -- the **listener**.
+A listener is not fed; it is *queried*. It parks on a socket, answers requests, and owns
+durable state. Both are first-class citizens of the same mesh, built on the same shared
+layer; they differ in how they wake, what they keep, and how long they live.
+
+## Two archetypes
+
+| | WATCHER (pipeline) | LISTENER (service) |
+|---|---|---|
+| how work arrives | pushed in (an inbox fills) | pulled out (a caller asks) |
+| shape | a bento walks the lifecycle FSM | a request comes in, a response goes out |
+| state | owns no store; the bento is the state | owns a durable store; requests are stateless |
+| lifetime | ephemeral -- runs while there is work | resident -- always on, parked on a socket |
+| wake source | the bus / a file appearing | a connection on its listening socket |
+
+The watcher is **push**: something drops work in, the watcher reacts. The listener is
+**pull**: something wants an answer, the listener has it. Neither polls the other, and
+neither archetype is more of a citizen than the other -- they are two answers to two
+different questions, "what happens to this work?" and "what is true right now?"
+
+## Why a listener does not spin
+
+An always-on service sounds like an always-running loop, and an always-running loop
+sounds like a pegged core. It is neither. A listener parks at roughly 0% CPU when idle
+because **"waiting" is a blocking syscall, not a loop.** It calls `accept` (or `poll`,
+or a blocking read) and the kernel does not return until there is something to do. The
+process is descheduled -- it consumes no cycles -- until a connection arrives, at which
+point it is woken, handles the request, and blocks again.
+
+This is the difference between *waiting* and *busy-waiting*. A loop that checks "is there
+work yet?" and sleeps a little and checks again is a busy-wait; it burns a core to ask a
+question whose answer is almost always no. A blocking syscall asks the kernel to wake it
+exactly when the answer changes. A listener waits; it does not busy-wait. The watcher's
+inbox watch is the same idea from the other side -- it blocks on the bus, not a timer.
+
+## Semistate: the data is durable, the request is not
+
+A listener is stateful and stateless at once, and the two words are about two different
+things. Its **data** is persistent -- that is the point of a resident service that owns a
+store. Its **request handling** is stateless: there is no session, no login step, no
+server-side memory of who you are between calls. The credential rides every request (see
+the credential envelope in the data contract), so each request stands alone and carries
+everything needed to serve it.
+
+That statelessness is not a minor convenience; it is the **horizontal-scale seam.** A
+request that depends on nothing held in this particular process can be served by any
+process with access to the store. Today the mesh runs at `nodes == 1` and a single
+listener answers everything. Tomorrow it can run at `nodes == N` -- put more listeners in
+front of the same durable store -- and *no protocol changes*, because nothing about a
+request assumed there was only one of them. We do not build the N-node deployment now; we
+decline to foreclose it, which costs nothing if the request handling is honestly
+stateless from the start.
+
+## Every loop blocks; every retry backs off
+
+There is one operational rule that both archetypes obey, and it is the rule that keeps an
+always-on service from becoming an always-burning one:
+
+> Every loop blocks on something, and every reconnect or retry path backs off, bounded.
+
+The first half is the anti-busy-wait rule above: a service's main loop blocks on its
+socket, never on a timer it checks in a tight cycle. The second half is the failure case
+that bites in practice. A listener depends on things that can be down -- its store, the
+bus, a discovery lookup. The naive reconnect is a `while not connected: connect()` loop,
+and when the dependency is *durably* down that loop pegs a core doing nothing, on a
+machine that is also the operator's laptop. So every reconnect and retry path uses bounded
+backoff: it waits, longer each time up to a ceiling, between attempts. A dead dependency
+costs a slow, quiet trickle of retries, not a hot loop. This is the listener equivalent of
+the pipeline's `PARTIAL` discipline -- when the world is not ready, degrade quietly rather
+than spin.
+
+## Citizenship: what a listener keeps, and what it drops
+
+Both archetypes are built on the shared citizen layer, and a listener keeps the parts that
+make a thing a member of the mesh:
+
+- **identity** -- it knows its own name and registers under it;
+- **heartbeat** -- it reports that it is alive;
+- **discovery** -- it can be found by the orchestrator;
+- **emit** -- it can put events on the bus.
+
+A listener **drops** the two things that belong to the watcher and not to it: the
+**bento lifecycle FSM** (it does not walk work through states; it answers requests) and the
+**watcher / inbox** (nothing is pushed into it). Those are not disabled or stubbed -- they
+are simply not part of this archetype.
+
+Liveness is **self-reported**, and that detail matters. A listener heartbeats via its own
+emit sidecar -- the component closest to the truth of whether the service is actually up --
+onto the shared `observability.events` topic, keyed by service name. It is never a
+per-service topic (the fleet watches one stream, not a discovered set of them), and the
+registry **does not fabricate** a service's liveness: absence of a heartbeat is absence of
+a claim, not a synthesized "down" or "up." The thing that knows whether it is alive is the
+thing that says so.
