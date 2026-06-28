@@ -1,0 +1,92 @@
+syntax = "proto3";
+
+// Package dataprovider.v1 is a mesh data contract modeled on Uber's Schemaless
+// (the interface, not the distributed system). See proto/dataprovider/v1/README.md.
+package dataprovider.v1;
+
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+
+// Cell is the smallest entity in a DataProvider: an immutable JSON value addressed by
+// (row_key, column) and versioned by ref_key. The latest cell for a (row_key, column)
+// is the one with the highest ref_key. A cell is never mutated once written -- a new
+// value is a new cell at a higher ref_key, never an edit of the old one.
+message Cell {
+  // row_key is the entity identifier -- a UUID.
+  string row_key = 1;
+  // column names the field within the row.
+  string column = 2;
+  // ref_key is the version; the latest cell for (row_key, column) is the highest ref_key.
+  int64 ref_key = 3;
+  // body is the JSON value the cell carries.
+  google.protobuf.Struct body = 4;
+  // created_at is when the cell was written. Cells are immutable, so this never changes.
+  google.protobuf.Timestamp created_at = 5;
+}
+
+// GetRequest fetches one specific cell version: the cell at (row_key, column, ref_key).
+message GetRequest {
+  string namespace = 1;
+  string row_key = 2;
+  string column = 3;
+  int64 ref_key = 4;
+}
+
+// GetLatestRequest fetches the latest cell for (row_key, column) -- the highest ref_key.
+message GetLatestRequest {
+  string namespace = 1;
+  string row_key = 2;
+  string column = 3;
+}
+
+// PutRequest appends a cell. The caller supplies ref_key (the version); writes are
+// append-only, so a Put never overwrites an existing cell -- it adds one.
+message PutRequest {
+  string namespace = 1;
+  string row_key = 2;
+  string column = 3;
+  int64 ref_key = 4;
+  google.protobuf.Struct body = 5;
+}
+
+// PutResponse echoes the coordinates of the appended cell.
+message PutResponse {
+  string row_key = 1;
+  string column = 2;
+  int64 ref_key = 3;
+}
+
+// QueryRequest is the "request keys with meta" path: a lookup over a secondary index
+// defined on the cells' JSON fields. The index is eventually consistent -- it trails the
+// append log. predicates are matched against the indexed fields. shard_hint is optional:
+// Schemaless mandates a shard key on a query; this contract does not.
+message QueryRequest {
+  string namespace = 1;
+  string index = 2;
+  map<string, google.protobuf.Value> predicates = 3;
+  string shard_hint = 4;
+  uint32 limit = 5;
+}
+
+// QueryResponse returns the cells matching the query.
+message QueryResponse {
+  repeated Cell rows = 1;
+}
+
+// DataProvider is the mesh's append-only, immutable cell store. Any service that
+// satisfies this contract is a DataProvider. Reads return cells directly; writes are
+// append-only and idempotent (the caller supplies ref_key, so re-issuing the same Put
+// adds nothing); the query path is a secondary index over the cells' JSON fields and is
+// eventually consistent. The contract models the Schemaless interface, not its
+// distributed system -- sharding and partitioning are an implementer's concern, not the
+// wire's.
+service DataProvider {
+  // Get returns one specific cell version, addressed by (row_key, column, ref_key).
+  rpc Get(GetRequest) returns (Cell);
+  // GetLatest returns the highest-ref_key cell for (row_key, column).
+  rpc GetLatest(GetLatestRequest) returns (Cell);
+  // Put appends a cell. Append-only and idempotent: the caller supplies ref_key.
+  rpc Put(PutRequest) returns (PutResponse);
+  // Query looks up cells by predicates over a secondary index (eventually consistent).
+  rpc Query(QueryRequest) returns (QueryResponse);
+}
