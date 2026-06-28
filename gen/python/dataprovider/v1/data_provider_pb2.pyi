@@ -1,5 +1,6 @@
 import datetime
 
+from auth.v1 import auth_pb2 as _auth_pb2
 from google.protobuf import struct_pb2 as _struct_pb2
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from google.protobuf.internal import containers as _containers
@@ -25,16 +26,18 @@ class Cell(_message.Message):
     def __init__(self, row_key: _Optional[str] = ..., column: _Optional[str] = ..., ref_key: _Optional[int] = ..., body: _Optional[_Union[_struct_pb2.Struct, _Mapping]] = ..., created_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ...) -> None: ...
 
 class GetRequest(_message.Message):
-    __slots__ = ("namespace", "row_key", "column", "ref_key")
+    __slots__ = ("namespace", "row_key", "column", "ref_key", "credentials")
     NAMESPACE_FIELD_NUMBER: _ClassVar[int]
     ROW_KEY_FIELD_NUMBER: _ClassVar[int]
     COLUMN_FIELD_NUMBER: _ClassVar[int]
     REF_KEY_FIELD_NUMBER: _ClassVar[int]
+    CREDENTIALS_FIELD_NUMBER: _ClassVar[int]
     namespace: str
     row_key: str
     column: str
     ref_key: int
-    def __init__(self, namespace: _Optional[str] = ..., row_key: _Optional[str] = ..., column: _Optional[str] = ..., ref_key: _Optional[int] = ...) -> None: ...
+    credentials: _containers.RepeatedCompositeFieldContainer[_auth_pb2.AuthPayload]
+    def __init__(self, namespace: _Optional[str] = ..., row_key: _Optional[str] = ..., column: _Optional[str] = ..., ref_key: _Optional[int] = ..., credentials: _Optional[_Iterable[_Union[_auth_pb2.AuthPayload, _Mapping]]] = ...) -> None: ...
 
 class GetResponse(_message.Message):
     __slots__ = ("cell", "found")
@@ -45,14 +48,16 @@ class GetResponse(_message.Message):
     def __init__(self, cell: _Optional[_Union[Cell, _Mapping]] = ..., found: _Optional[bool] = ...) -> None: ...
 
 class GetLatestRequest(_message.Message):
-    __slots__ = ("namespace", "row_key", "column")
+    __slots__ = ("namespace", "row_key", "column", "credentials")
     NAMESPACE_FIELD_NUMBER: _ClassVar[int]
     ROW_KEY_FIELD_NUMBER: _ClassVar[int]
     COLUMN_FIELD_NUMBER: _ClassVar[int]
+    CREDENTIALS_FIELD_NUMBER: _ClassVar[int]
     namespace: str
     row_key: str
     column: str
-    def __init__(self, namespace: _Optional[str] = ..., row_key: _Optional[str] = ..., column: _Optional[str] = ...) -> None: ...
+    credentials: _containers.RepeatedCompositeFieldContainer[_auth_pb2.AuthPayload]
+    def __init__(self, namespace: _Optional[str] = ..., row_key: _Optional[str] = ..., column: _Optional[str] = ..., credentials: _Optional[_Iterable[_Union[_auth_pb2.AuthPayload, _Mapping]]] = ...) -> None: ...
 
 class GetLatestResponse(_message.Message):
     __slots__ = ("cell", "found")
@@ -63,18 +68,20 @@ class GetLatestResponse(_message.Message):
     def __init__(self, cell: _Optional[_Union[Cell, _Mapping]] = ..., found: _Optional[bool] = ...) -> None: ...
 
 class PutRequest(_message.Message):
-    __slots__ = ("namespace", "row_key", "column", "ref_key", "body")
+    __slots__ = ("namespace", "row_key", "column", "ref_key", "body", "credentials")
     NAMESPACE_FIELD_NUMBER: _ClassVar[int]
     ROW_KEY_FIELD_NUMBER: _ClassVar[int]
     COLUMN_FIELD_NUMBER: _ClassVar[int]
     REF_KEY_FIELD_NUMBER: _ClassVar[int]
     BODY_FIELD_NUMBER: _ClassVar[int]
+    CREDENTIALS_FIELD_NUMBER: _ClassVar[int]
     namespace: str
     row_key: str
     column: str
     ref_key: int
     body: _struct_pb2.Struct
-    def __init__(self, namespace: _Optional[str] = ..., row_key: _Optional[str] = ..., column: _Optional[str] = ..., ref_key: _Optional[int] = ..., body: _Optional[_Union[_struct_pb2.Struct, _Mapping]] = ...) -> None: ...
+    credentials: _containers.RepeatedCompositeFieldContainer[_auth_pb2.AuthPayload]
+    def __init__(self, namespace: _Optional[str] = ..., row_key: _Optional[str] = ..., column: _Optional[str] = ..., ref_key: _Optional[int] = ..., body: _Optional[_Union[_struct_pb2.Struct, _Mapping]] = ..., credentials: _Optional[_Iterable[_Union[_auth_pb2.AuthPayload, _Mapping]]] = ...) -> None: ...
 
 class PutResponse(_message.Message):
     __slots__ = ("row_key", "column", "ref_key")
@@ -87,7 +94,7 @@ class PutResponse(_message.Message):
     def __init__(self, row_key: _Optional[str] = ..., column: _Optional[str] = ..., ref_key: _Optional[int] = ...) -> None: ...
 
 class QueryRequest(_message.Message):
-    __slots__ = ("namespace", "index", "predicates", "shard_hint", "limit")
+    __slots__ = ("namespace", "index", "predicates", "shard_hint", "limit", "credentials")
     class PredicatesEntry(_message.Message):
         __slots__ = ("key", "value")
         KEY_FIELD_NUMBER: _ClassVar[int]
@@ -100,12 +107,14 @@ class QueryRequest(_message.Message):
     PREDICATES_FIELD_NUMBER: _ClassVar[int]
     SHARD_HINT_FIELD_NUMBER: _ClassVar[int]
     LIMIT_FIELD_NUMBER: _ClassVar[int]
+    CREDENTIALS_FIELD_NUMBER: _ClassVar[int]
     namespace: str
     index: str
     predicates: _containers.MessageMap[str, _struct_pb2.Value]
     shard_hint: str
     limit: int
-    def __init__(self, namespace: _Optional[str] = ..., index: _Optional[str] = ..., predicates: _Optional[_Mapping[str, _struct_pb2.Value]] = ..., shard_hint: _Optional[str] = ..., limit: _Optional[int] = ...) -> None: ...
+    credentials: _containers.RepeatedCompositeFieldContainer[_auth_pb2.AuthPayload]
+    def __init__(self, namespace: _Optional[str] = ..., index: _Optional[str] = ..., predicates: _Optional[_Mapping[str, _struct_pb2.Value]] = ..., shard_hint: _Optional[str] = ..., limit: _Optional[int] = ..., credentials: _Optional[_Iterable[_Union[_auth_pb2.AuthPayload, _Mapping]]] = ...) -> None: ...
 
 class QueryResponse(_message.Message):
     __slots__ = ("rows", "next_page_token")

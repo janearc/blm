@@ -1,16 +1,21 @@
 syntax = "proto3";
 
 // Package dataprovider.v1 is a mesh data contract modeled on Uber's Schemaless
-// (the interface, not the distributed system). See proto/dataprovider/v1/README.md.
+// (the interface, not the distributed system). The protocol allows for an append-only,
+// immutable cell store; what an implementer builds underneath is its business. See
+// proto/dataprovider/v1/README.md, including "Divergence from Schemaless" -- auth (the
+// per-request credential on each request below) is the one explicit divergence from the
+// 2016 design.
 package dataprovider.v1;
 
+import "auth/v1/auth.proto";
 import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
 
-// Cell is the smallest entity in a DataProvider: an immutable JSON value addressed by
+// Cell is the smallest entity in a DataProvider: a JSON value addressed by
 // (row_key, column) and versioned by ref_key. The latest cell for a (row_key, column)
-// is the one with the highest ref_key. A cell is never mutated once written -- a new
-// value is a new cell at a higher ref_key, never an edit of the old one.
+// is the one with the highest ref_key. A faithful provider never mutates a cell once
+// written -- a new value is a new cell at a higher ref_key, never an edit of the old one.
 message Cell {
   // row_key is the entity identifier -- a UUID.
   string row_key = 1;
@@ -30,6 +35,13 @@ message GetRequest {
   string row_key = 2;
   string column = 3;
   int64 ref_key = 4;
+  // credentials ride every request because the provider is stateless: there is no
+  // session and no login step, so a credential is presented per call. OAUTH proves you
+  // may make the request; an implementer may require further payloads (e.g. a per-record
+  // capability) for finer access. Opaque -- the provider validates per its policy and the
+  // wire interprets none of it. This per-request credential is the one explicit divergence
+  // from 2016 Schemaless (see README, "Divergence from Schemaless").
+  repeated auth.v1.AuthPayload credentials = 5;
 }
 
 // GetResponse carries the requested cell. found is how a read says "no such cell":
@@ -44,6 +56,8 @@ message GetLatestRequest {
   string namespace = 1;
   string row_key = 2;
   string column = 3;
+  // per-request credential; see GetRequest.credentials and auth.v1.
+  repeated auth.v1.AuthPayload credentials = 4;
 }
 
 // GetLatestResponse carries the latest cell. found is how a read says "no such cell":
@@ -53,16 +67,19 @@ message GetLatestResponse {
   bool found = 2;
 }
 
-// PutRequest appends a cell. The caller supplies ref_key (the version); writes are
-// append-only, so a Put never overwrites an existing cell -- it adds one. A Put at an
-// existing (row_key, column, ref_key) is rejected if the body differs -- immutability
-// wins; re-Putting the identical cell is a no-op (idempotent retry).
+// PutRequest appends a cell. The caller supplies ref_key (the version). The protocol is
+// append-only by design: a Put adds a cell rather than editing one. A provider that
+// enforces immutability rejects a Put at an existing (row_key, column, ref_key) whose
+// body differs (recommended for Schemaless fidelity); re-Putting the identical cell is a
+// no-op (idempotent retry).
 message PutRequest {
   string namespace = 1;
   string row_key = 2;
   string column = 3;
   int64 ref_key = 4;
   google.protobuf.Struct body = 5;
+  // per-request credential; see GetRequest.credentials and auth.v1.
+  repeated auth.v1.AuthPayload credentials = 6;
 }
 
 // PutResponse echoes the coordinates of the appended cell.
@@ -81,9 +98,13 @@ message QueryRequest {
   string index = 2;
   map<string, google.protobuf.Value> predicates = 3;
   // shard_hint is provisional: an implementation-specific routing hint, not a contract
-  // guarantee. It may move to a transport header later.
+  // guarantee, and it may move to a transport header later. It is present for Schemaless
+  // fidelity (Schemaless mandates a shard key on a query) and is a no-op for our use --
+  // we do not shard at n=1.
   string shard_hint = 4;
   uint32 limit = 5;
+  // per-request credential; see GetRequest.credentials and auth.v1.
+  repeated auth.v1.AuthPayload credentials = 6;
 }
 
 // QueryResponse returns the cells matching the query.
@@ -94,13 +115,17 @@ message QueryResponse {
   string next_page_token = 2;
 }
 
-// DataProvider is the mesh's append-only, immutable cell store. Any service that
-// satisfies this contract is a DataProvider. Reads return cells directly; writes are
-// append-only and idempotent (the caller supplies ref_key, so re-issuing the same Put
-// adds nothing); the query path is a secondary index over the cells' JSON fields and is
-// eventually consistent. The contract models the Schemaless interface, not its
-// distributed system -- sharding and partitioning are an implementer's concern, not the
-// wire's.
+// DataProvider is the mesh's data contract: the protocol allows for an append-only,
+// immutable cell store, modeled on Uber's Schemaless. Any service that satisfies this
+// contract is a DataProvider; what it builds underneath -- and how strictly it enforces
+// immutability -- is its business (enforcing it is recommended for Schemaless fidelity,
+// not mandated here). Reads return a cell and a found flag; writes are idempotent (the
+// caller supplies ref_key, so re-issuing the same Put adds nothing); the query path is a
+// secondary index over the cells' JSON fields and is eventually consistent. The contract
+// models the Schemaless interface, not its distributed system -- sharding and
+// partitioning are an implementer's concern, not the wire's. Every request carries an
+// opaque per-request credential (auth.v1); the provider validates per its policy and the
+// wire interprets none of it.
 service DataProvider {
   // Get returns one specific cell version, addressed by (row_key, column, ref_key).
   // A miss is GetResponse.found=false, not an error.

@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+// Package auth.v1 is the mesh's credential envelope: a generic, opaque, per-request
+// credential the contract carries but never interprets. The mesh reads no payload and
+// holds no auth state -- it transports credentials; auth policy is the implementer's.
+package auth.v1;
+
+// AuthPayloadType tags what kind of credential a payload carries. It is extensible --
+// add types as needed; there are no external clients to break. The zero value
+// (UNSPECIFIED) means no credential: the old network-trust / 2016-Schemaless mode
+// (trusted because you could reach it), one end of the same axis as a presented one.
+enum AuthPayloadType {
+  AUTH_PAYLOAD_TYPE_UNSPECIFIED = 0;
+  AUTH_PAYLOAD_TYPE_OAUTH = 1;
+}
+
+// AuthPayload is one opaque credential presented on a request. The mesh never reads
+// payload; an implementer validates it per its own policy and interprets nothing on
+// the wire's behalf.
+message AuthPayload {
+  AuthPayloadType type = 1;
+  bytes payload = 2;
+}

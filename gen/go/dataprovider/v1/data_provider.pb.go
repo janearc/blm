@@ -5,11 +5,16 @@
 // source: dataprovider/v1/data_provider.proto
 
 // Package dataprovider.v1 is a mesh data contract modeled on Uber's Schemaless
-// (the interface, not the distributed system). See proto/dataprovider/v1/README.md.
+// (the interface, not the distributed system). The protocol allows for an append-only,
+// immutable cell store; what an implementer builds underneath is its business. See
+// proto/dataprovider/v1/README.md, including "Divergence from Schemaless" -- auth (the
+// per-request credential on each request below) is the one explicit divergence from the
+// 2016 design.
 
 package dataproviderv1
 
 import (
+	v1 "github.com/janearc/blm/gen/go/auth/v1"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	structpb "google.golang.org/protobuf/types/known/structpb"
@@ -26,10 +31,10 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// Cell is the smallest entity in a DataProvider: an immutable JSON value addressed by
+// Cell is the smallest entity in a DataProvider: a JSON value addressed by
 // (row_key, column) and versioned by ref_key. The latest cell for a (row_key, column)
-// is the one with the highest ref_key. A cell is never mutated once written -- a new
-// value is a new cell at a higher ref_key, never an edit of the old one.
+// is the one with the highest ref_key. A faithful provider never mutates a cell once
+// written -- a new value is a new cell at a higher ref_key, never an edit of the old one.
 type Cell struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// row_key is the entity identifier -- a UUID.
@@ -113,11 +118,18 @@ func (x *Cell) GetCreatedAt() *timestamppb.Timestamp {
 
 // GetRequest fetches one specific cell version: the cell at (row_key, column, ref_key).
 type GetRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Namespace     string                 `protobuf:"bytes,1,opt,name=namespace,proto3" json:"namespace,omitempty"`
-	RowKey        string                 `protobuf:"bytes,2,opt,name=row_key,json=rowKey,proto3" json:"row_key,omitempty"`
-	Column        string                 `protobuf:"bytes,3,opt,name=column,proto3" json:"column,omitempty"`
-	RefKey        int64                  `protobuf:"varint,4,opt,name=ref_key,json=refKey,proto3" json:"ref_key,omitempty"`
+	state     protoimpl.MessageState `protogen:"open.v1"`
+	Namespace string                 `protobuf:"bytes,1,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	RowKey    string                 `protobuf:"bytes,2,opt,name=row_key,json=rowKey,proto3" json:"row_key,omitempty"`
+	Column    string                 `protobuf:"bytes,3,opt,name=column,proto3" json:"column,omitempty"`
+	RefKey    int64                  `protobuf:"varint,4,opt,name=ref_key,json=refKey,proto3" json:"ref_key,omitempty"`
+	// credentials ride every request because the provider is stateless: there is no
+	// session and no login step, so a credential is presented per call. OAUTH proves you
+	// may make the request; an implementer may require further payloads (e.g. a per-record
+	// capability) for finer access. Opaque -- the provider validates per its policy and the
+	// wire interprets none of it. This per-request credential is the one explicit divergence
+	// from 2016 Schemaless (see README, "Divergence from Schemaless").
+	Credentials   []*v1.AuthPayload `protobuf:"bytes,5,rep,name=credentials,proto3" json:"credentials,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -180,6 +192,13 @@ func (x *GetRequest) GetRefKey() int64 {
 	return 0
 }
 
+func (x *GetRequest) GetCredentials() []*v1.AuthPayload {
+	if x != nil {
+		return x.Credentials
+	}
+	return nil
+}
+
 // GetResponse carries the requested cell. found is how a read says "no such cell":
 // a miss is found=false with no body, not an error -- the call still succeeds.
 type GetResponse struct {
@@ -236,10 +255,12 @@ func (x *GetResponse) GetFound() bool {
 
 // GetLatestRequest fetches the latest cell for (row_key, column) -- the highest ref_key.
 type GetLatestRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Namespace     string                 `protobuf:"bytes,1,opt,name=namespace,proto3" json:"namespace,omitempty"`
-	RowKey        string                 `protobuf:"bytes,2,opt,name=row_key,json=rowKey,proto3" json:"row_key,omitempty"`
-	Column        string                 `protobuf:"bytes,3,opt,name=column,proto3" json:"column,omitempty"`
+	state     protoimpl.MessageState `protogen:"open.v1"`
+	Namespace string                 `protobuf:"bytes,1,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	RowKey    string                 `protobuf:"bytes,2,opt,name=row_key,json=rowKey,proto3" json:"row_key,omitempty"`
+	Column    string                 `protobuf:"bytes,3,opt,name=column,proto3" json:"column,omitempty"`
+	// per-request credential; see GetRequest.credentials and auth.v1.
+	Credentials   []*v1.AuthPayload `protobuf:"bytes,4,rep,name=credentials,proto3" json:"credentials,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -293,6 +314,13 @@ func (x *GetLatestRequest) GetColumn() string {
 		return x.Column
 	}
 	return ""
+}
+
+func (x *GetLatestRequest) GetCredentials() []*v1.AuthPayload {
+	if x != nil {
+		return x.Credentials
+	}
+	return nil
 }
 
 // GetLatestResponse carries the latest cell. found is how a read says "no such cell":
@@ -349,17 +377,20 @@ func (x *GetLatestResponse) GetFound() bool {
 	return false
 }
 
-// PutRequest appends a cell. The caller supplies ref_key (the version); writes are
-// append-only, so a Put never overwrites an existing cell -- it adds one. A Put at an
-// existing (row_key, column, ref_key) is rejected if the body differs -- immutability
-// wins; re-Putting the identical cell is a no-op (idempotent retry).
+// PutRequest appends a cell. The caller supplies ref_key (the version). The protocol is
+// append-only by design: a Put adds a cell rather than editing one. A provider that
+// enforces immutability rejects a Put at an existing (row_key, column, ref_key) whose
+// body differs (recommended for Schemaless fidelity); re-Putting the identical cell is a
+// no-op (idempotent retry).
 type PutRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Namespace     string                 `protobuf:"bytes,1,opt,name=namespace,proto3" json:"namespace,omitempty"`
-	RowKey        string                 `protobuf:"bytes,2,opt,name=row_key,json=rowKey,proto3" json:"row_key,omitempty"`
-	Column        string                 `protobuf:"bytes,3,opt,name=column,proto3" json:"column,omitempty"`
-	RefKey        int64                  `protobuf:"varint,4,opt,name=ref_key,json=refKey,proto3" json:"ref_key,omitempty"`
-	Body          *structpb.Struct       `protobuf:"bytes,5,opt,name=body,proto3" json:"body,omitempty"`
+	state     protoimpl.MessageState `protogen:"open.v1"`
+	Namespace string                 `protobuf:"bytes,1,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	RowKey    string                 `protobuf:"bytes,2,opt,name=row_key,json=rowKey,proto3" json:"row_key,omitempty"`
+	Column    string                 `protobuf:"bytes,3,opt,name=column,proto3" json:"column,omitempty"`
+	RefKey    int64                  `protobuf:"varint,4,opt,name=ref_key,json=refKey,proto3" json:"ref_key,omitempty"`
+	Body      *structpb.Struct       `protobuf:"bytes,5,opt,name=body,proto3" json:"body,omitempty"`
+	// per-request credential; see GetRequest.credentials and auth.v1.
+	Credentials   []*v1.AuthPayload `protobuf:"bytes,6,rep,name=credentials,proto3" json:"credentials,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -425,6 +456,13 @@ func (x *PutRequest) GetRefKey() int64 {
 func (x *PutRequest) GetBody() *structpb.Struct {
 	if x != nil {
 		return x.Body
+	}
+	return nil
+}
+
+func (x *PutRequest) GetCredentials() []*v1.AuthPayload {
+	if x != nil {
+		return x.Credentials
 	}
 	return nil
 }
@@ -500,9 +538,13 @@ type QueryRequest struct {
 	Index      string                     `protobuf:"bytes,2,opt,name=index,proto3" json:"index,omitempty"`
 	Predicates map[string]*structpb.Value `protobuf:"bytes,3,rep,name=predicates,proto3" json:"predicates,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	// shard_hint is provisional: an implementation-specific routing hint, not a contract
-	// guarantee. It may move to a transport header later.
-	ShardHint     string `protobuf:"bytes,4,opt,name=shard_hint,json=shardHint,proto3" json:"shard_hint,omitempty"`
-	Limit         uint32 `protobuf:"varint,5,opt,name=limit,proto3" json:"limit,omitempty"`
+	// guarantee, and it may move to a transport header later. It is present for Schemaless
+	// fidelity (Schemaless mandates a shard key on a query) and is a no-op for our use --
+	// we do not shard at n=1.
+	ShardHint string `protobuf:"bytes,4,opt,name=shard_hint,json=shardHint,proto3" json:"shard_hint,omitempty"`
+	Limit     uint32 `protobuf:"varint,5,opt,name=limit,proto3" json:"limit,omitempty"`
+	// per-request credential; see GetRequest.credentials and auth.v1.
+	Credentials   []*v1.AuthPayload `protobuf:"bytes,6,rep,name=credentials,proto3" json:"credentials,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -572,6 +614,13 @@ func (x *QueryRequest) GetLimit() uint32 {
 	return 0
 }
 
+func (x *QueryRequest) GetCredentials() []*v1.AuthPayload {
+	if x != nil {
+		return x.Credentials
+	}
+	return nil
+}
+
 // QueryResponse returns the cells matching the query.
 type QueryResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -631,41 +680,44 @@ var File_dataprovider_v1_data_provider_proto protoreflect.FileDescriptor
 
 const file_dataprovider_v1_data_provider_proto_rawDesc = "" +
 	"\n" +
-	"#dataprovider/v1/data_provider.proto\x12\x0fdataprovider.v1\x1a\x1cgoogle/protobuf/struct.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xb8\x01\n" +
+	"#dataprovider/v1/data_provider.proto\x12\x0fdataprovider.v1\x1a\x12auth/v1/auth.proto\x1a\x1cgoogle/protobuf/struct.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xb8\x01\n" +
 	"\x04Cell\x12\x17\n" +
 	"\arow_key\x18\x01 \x01(\tR\x06rowKey\x12\x16\n" +
 	"\x06column\x18\x02 \x01(\tR\x06column\x12\x17\n" +
 	"\aref_key\x18\x03 \x01(\x03R\x06refKey\x12+\n" +
 	"\x04body\x18\x04 \x01(\v2\x17.google.protobuf.StructR\x04body\x129\n" +
 	"\n" +
-	"created_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\"t\n" +
+	"created_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\"\xac\x01\n" +
 	"\n" +
 	"GetRequest\x12\x1c\n" +
 	"\tnamespace\x18\x01 \x01(\tR\tnamespace\x12\x17\n" +
 	"\arow_key\x18\x02 \x01(\tR\x06rowKey\x12\x16\n" +
 	"\x06column\x18\x03 \x01(\tR\x06column\x12\x17\n" +
-	"\aref_key\x18\x04 \x01(\x03R\x06refKey\"N\n" +
+	"\aref_key\x18\x04 \x01(\x03R\x06refKey\x126\n" +
+	"\vcredentials\x18\x05 \x03(\v2\x14.auth.v1.AuthPayloadR\vcredentials\"N\n" +
 	"\vGetResponse\x12)\n" +
 	"\x04cell\x18\x01 \x01(\v2\x15.dataprovider.v1.CellR\x04cell\x12\x14\n" +
-	"\x05found\x18\x02 \x01(\bR\x05found\"a\n" +
+	"\x05found\x18\x02 \x01(\bR\x05found\"\x99\x01\n" +
 	"\x10GetLatestRequest\x12\x1c\n" +
 	"\tnamespace\x18\x01 \x01(\tR\tnamespace\x12\x17\n" +
 	"\arow_key\x18\x02 \x01(\tR\x06rowKey\x12\x16\n" +
-	"\x06column\x18\x03 \x01(\tR\x06column\"T\n" +
+	"\x06column\x18\x03 \x01(\tR\x06column\x126\n" +
+	"\vcredentials\x18\x04 \x03(\v2\x14.auth.v1.AuthPayloadR\vcredentials\"T\n" +
 	"\x11GetLatestResponse\x12)\n" +
 	"\x04cell\x18\x01 \x01(\v2\x15.dataprovider.v1.CellR\x04cell\x12\x14\n" +
-	"\x05found\x18\x02 \x01(\bR\x05found\"\xa1\x01\n" +
+	"\x05found\x18\x02 \x01(\bR\x05found\"\xd9\x01\n" +
 	"\n" +
 	"PutRequest\x12\x1c\n" +
 	"\tnamespace\x18\x01 \x01(\tR\tnamespace\x12\x17\n" +
 	"\arow_key\x18\x02 \x01(\tR\x06rowKey\x12\x16\n" +
 	"\x06column\x18\x03 \x01(\tR\x06column\x12\x17\n" +
 	"\aref_key\x18\x04 \x01(\x03R\x06refKey\x12+\n" +
-	"\x04body\x18\x05 \x01(\v2\x17.google.protobuf.StructR\x04body\"W\n" +
+	"\x04body\x18\x05 \x01(\v2\x17.google.protobuf.StructR\x04body\x126\n" +
+	"\vcredentials\x18\x06 \x03(\v2\x14.auth.v1.AuthPayloadR\vcredentials\"W\n" +
 	"\vPutResponse\x12\x17\n" +
 	"\arow_key\x18\x01 \x01(\tR\x06rowKey\x12\x16\n" +
 	"\x06column\x18\x02 \x01(\tR\x06column\x12\x17\n" +
-	"\aref_key\x18\x03 \x01(\x03R\x06refKey\"\x9d\x02\n" +
+	"\aref_key\x18\x03 \x01(\x03R\x06refKey\"\xd5\x02\n" +
 	"\fQueryRequest\x12\x1c\n" +
 	"\tnamespace\x18\x01 \x01(\tR\tnamespace\x12\x14\n" +
 	"\x05index\x18\x02 \x01(\tR\x05index\x12M\n" +
@@ -674,7 +726,8 @@ const file_dataprovider_v1_data_provider_proto_rawDesc = "" +
 	"predicates\x12\x1d\n" +
 	"\n" +
 	"shard_hint\x18\x04 \x01(\tR\tshardHint\x12\x14\n" +
-	"\x05limit\x18\x05 \x01(\rR\x05limit\x1aU\n" +
+	"\x05limit\x18\x05 \x01(\rR\x05limit\x126\n" +
+	"\vcredentials\x18\x06 \x03(\v2\x14.auth.v1.AuthPayloadR\vcredentials\x1aU\n" +
 	"\x0fPredicatesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12,\n" +
 	"\x05value\x18\x02 \x01(\v2\x16.google.protobuf.ValueR\x05value:\x028\x01\"b\n" +
@@ -714,30 +767,35 @@ var file_dataprovider_v1_data_provider_proto_goTypes = []any{
 	nil,                           // 9: dataprovider.v1.QueryRequest.PredicatesEntry
 	(*structpb.Struct)(nil),       // 10: google.protobuf.Struct
 	(*timestamppb.Timestamp)(nil), // 11: google.protobuf.Timestamp
-	(*structpb.Value)(nil),        // 12: google.protobuf.Value
+	(*v1.AuthPayload)(nil),        // 12: auth.v1.AuthPayload
+	(*structpb.Value)(nil),        // 13: google.protobuf.Value
 }
 var file_dataprovider_v1_data_provider_proto_depIdxs = []int32{
 	10, // 0: dataprovider.v1.Cell.body:type_name -> google.protobuf.Struct
 	11, // 1: dataprovider.v1.Cell.created_at:type_name -> google.protobuf.Timestamp
-	0,  // 2: dataprovider.v1.GetResponse.cell:type_name -> dataprovider.v1.Cell
-	0,  // 3: dataprovider.v1.GetLatestResponse.cell:type_name -> dataprovider.v1.Cell
-	10, // 4: dataprovider.v1.PutRequest.body:type_name -> google.protobuf.Struct
-	9,  // 5: dataprovider.v1.QueryRequest.predicates:type_name -> dataprovider.v1.QueryRequest.PredicatesEntry
-	0,  // 6: dataprovider.v1.QueryResponse.rows:type_name -> dataprovider.v1.Cell
-	12, // 7: dataprovider.v1.QueryRequest.PredicatesEntry.value:type_name -> google.protobuf.Value
-	1,  // 8: dataprovider.v1.DataProvider.Get:input_type -> dataprovider.v1.GetRequest
-	3,  // 9: dataprovider.v1.DataProvider.GetLatest:input_type -> dataprovider.v1.GetLatestRequest
-	5,  // 10: dataprovider.v1.DataProvider.Put:input_type -> dataprovider.v1.PutRequest
-	7,  // 11: dataprovider.v1.DataProvider.Query:input_type -> dataprovider.v1.QueryRequest
-	2,  // 12: dataprovider.v1.DataProvider.Get:output_type -> dataprovider.v1.GetResponse
-	4,  // 13: dataprovider.v1.DataProvider.GetLatest:output_type -> dataprovider.v1.GetLatestResponse
-	6,  // 14: dataprovider.v1.DataProvider.Put:output_type -> dataprovider.v1.PutResponse
-	8,  // 15: dataprovider.v1.DataProvider.Query:output_type -> dataprovider.v1.QueryResponse
-	12, // [12:16] is the sub-list for method output_type
-	8,  // [8:12] is the sub-list for method input_type
-	8,  // [8:8] is the sub-list for extension type_name
-	8,  // [8:8] is the sub-list for extension extendee
-	0,  // [0:8] is the sub-list for field type_name
+	12, // 2: dataprovider.v1.GetRequest.credentials:type_name -> auth.v1.AuthPayload
+	0,  // 3: dataprovider.v1.GetResponse.cell:type_name -> dataprovider.v1.Cell
+	12, // 4: dataprovider.v1.GetLatestRequest.credentials:type_name -> auth.v1.AuthPayload
+	0,  // 5: dataprovider.v1.GetLatestResponse.cell:type_name -> dataprovider.v1.Cell
+	10, // 6: dataprovider.v1.PutRequest.body:type_name -> google.protobuf.Struct
+	12, // 7: dataprovider.v1.PutRequest.credentials:type_name -> auth.v1.AuthPayload
+	9,  // 8: dataprovider.v1.QueryRequest.predicates:type_name -> dataprovider.v1.QueryRequest.PredicatesEntry
+	12, // 9: dataprovider.v1.QueryRequest.credentials:type_name -> auth.v1.AuthPayload
+	0,  // 10: dataprovider.v1.QueryResponse.rows:type_name -> dataprovider.v1.Cell
+	13, // 11: dataprovider.v1.QueryRequest.PredicatesEntry.value:type_name -> google.protobuf.Value
+	1,  // 12: dataprovider.v1.DataProvider.Get:input_type -> dataprovider.v1.GetRequest
+	3,  // 13: dataprovider.v1.DataProvider.GetLatest:input_type -> dataprovider.v1.GetLatestRequest
+	5,  // 14: dataprovider.v1.DataProvider.Put:input_type -> dataprovider.v1.PutRequest
+	7,  // 15: dataprovider.v1.DataProvider.Query:input_type -> dataprovider.v1.QueryRequest
+	2,  // 16: dataprovider.v1.DataProvider.Get:output_type -> dataprovider.v1.GetResponse
+	4,  // 17: dataprovider.v1.DataProvider.GetLatest:output_type -> dataprovider.v1.GetLatestResponse
+	6,  // 18: dataprovider.v1.DataProvider.Put:output_type -> dataprovider.v1.PutResponse
+	8,  // 19: dataprovider.v1.DataProvider.Query:output_type -> dataprovider.v1.QueryResponse
+	16, // [16:20] is the sub-list for method output_type
+	12, // [12:16] is the sub-list for method input_type
+	12, // [12:12] is the sub-list for extension type_name
+	12, // [12:12] is the sub-list for extension extendee
+	0,  // [0:12] is the sub-list for field type_name
 }
 
 func init() { file_dataprovider_v1_data_provider_proto_init() }
