@@ -66,3 +66,37 @@ The campaign is staged and additive. The interface is defined and implemented fi
 `/register` verifies it next; making registration mandatory -- retiring the static roster and
 poll -- is the final step. Until then `frood.v1` is the contract a frood is built against,
 and the set `/register` will check.
+
+## Your heartbeat is your keepalive
+
+The heartbeat in the guaranteed set is not only a health signal -- it is your **keepalive**.
+`observability.v1.ServiceHealthHeartbeat` has two readers: obs-svc-agg, which displays fleet
+health, and delightd, which uses it as the **registration lease**. delightd treats the
+*absence* of your heartbeat -- not its health state -- as you being gone: a heartbeat in ANY
+state (including `HEALTH_STATE_RED`) refreshes your lease; only silence expires it.
+
+Concretely, every frood:
+
+- **MUST** emit its heartbeat at least every heartbeat interval (15s). delightd expires a
+  registration after the lease TTL (90s -- six intervals of headroom) without one.
+- **MUST** keep the heartbeat independent of its work and its health -- a RED beat keeps you
+  registered; a missing beat expires you no matter how healthy you are.
+- **MUST NOT** let long-running work silence the heartbeat past the TTL. The "I was busy and
+  got expired" case is a bug in the frood, not the lease -- emit from a path that does not
+  block on your work.
+- **MUST NOT** slow the heartbeat cadence past the TTL for unrelated reasons (e.g. trimming
+  observability traffic). The cadence and the lease TTL are coupled on purpose.
+
+The TTL and interval are owned by delightd's `pkg/registry` (`DefaultLeaseTTL` and the 15s
+heartbeat cadence) -- that is the source of truth; the numbers here are a reference.
+
+The keepalive is keyed by **`service_name`**, which **MUST** be unique fleet-wide: delightd
+joins a heartbeat to its registration on `frood.v1.Identity.service_name`, so two froods
+sharing one would alias each other's leases -- one keeps the other alive, or expires it. One
+frood, one `service_name`.
+
+**Availability note.** Registry liveness is therefore fully gated on the heartbeat pipe: a
+fleet-wide broker outage refreshes nothing, so delightd expires registrations within one TTL
+even though the services are alive. That is safe-by-omission while the static roster is still
+authoritative (the registry is additive), but it becomes a real availability concern once
+registration is mandatory and the roster is retired (R-final).

@@ -79,8 +79,12 @@ func (HealthState) EnumDescriptor() ([]byte, []int) {
 	return file_observability_v1_observability_proto_rawDescGZIP(), []int{0}
 }
 
-// ServiceHealthHeartbeat is emitted by every fleet service on its heartbeat
-// tick. Subject (RecordNameStrategy): observability.v1.ServiceHealthHeartbeat.
+// ServiceHealthHeartbeat is emitted by every fleet service on its heartbeat tick. Subject
+// (RecordNameStrategy): observability.v1.ServiceHealthHeartbeat. It is the mesh's liveness
+// signal, consumed by BOTH obs-svc-agg (health display) AND delightd (the registration
+// lease): delightd treats the ABSENCE of a service's heartbeat -- not its health state -- as
+// the service being gone. A heartbeat in any state (including RED) refreshes the lease; only
+// silence expires it. See docs/frood.md, "Your heartbeat is your keepalive".
 type ServiceHealthHeartbeat struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
 	ServiceName        string                 `protobuf:"bytes,1,opt,name=service_name,json=serviceName,proto3" json:"service_name,omitempty"`
