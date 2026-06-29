@@ -31,11 +31,9 @@ const (
 // key its heartbeat, discovery, and registration.
 type Identity struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// service_name is the frood's own name -- the key it heartbeats under and is discovered
-	// by. It MUST be unique fleet-wide: a frood heartbeats under the same service_name it
-	// reports here, and the registry joins a heartbeat to its registration on this field (to
-	// refresh the lease), so two froods sharing a service_name would alias each other's
-	// liveness. One frood, one service_name.
+	// service_name is the frood's own name -- the key it heartbeats under and is discovered by.
+	// It MUST be unique fleet-wide: it keys the registration lease (a shared service_name would
+	// alias two froods' leases). See docs/frood.md, "Your heartbeat is your keepalive".
 	ServiceName string `protobuf:"bytes,1,opt,name=service_name,json=serviceName,proto3" json:"service_name,omitempty"`
 	// project is the declared registry.v1 Project name this frood binds to. It is the name
 	// (a string), not the Project message -- frood.v1 carries no dependency on the broker's
