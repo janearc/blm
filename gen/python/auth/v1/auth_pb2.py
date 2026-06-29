@@ -24,14 +24,14 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x12\x61uth/v1/auth.proto\x12\x07\x61uth.v1\"U\n\x0b\x41uthPayload\x12,\n\x04type\x18\x01 \x01(\x0e\x32\x18.auth.v1.AuthPayloadTypeR\x04type\x12\x18\n\x07payload\x18\x02 \x01(\x0cR\x07payload*\xc0\x02\n\x0f\x41uthPayloadType\x12!\n\x1d\x41UTH_PAYLOAD_TYPE_UNSPECIFIED\x10\x00\x12\x1b\n\x17\x41UTH_PAYLOAD_TYPE_OAUTH\x10\x01\x12\x1a\n\x16\x41UTH_PAYLOAD_TYPE_SAML\x10\x02\x12\x1e\n\x1a\x41UTH_PAYLOAD_TYPE_BAREWORD\x10\x03\x12\x19\n\x15\x41UTH_PAYLOAD_TYPE_JWT\x10\x04\x12\x1a\n\x16\x41UTH_PAYLOAD_TYPE_MTLS\x10\x05\x12\x1d\n\x19\x41UTH_PAYLOAD_TYPE_API_KEY\x10\x06\x12\x1b\n\x17\x41UTH_PAYLOAD_TYPE_BASIC\x10\x07\x12\x1c\n\x18\x41UTH_PAYLOAD_TYPE_BEARER\x10\x08\x12 \n\x1c\x41UTH_PAYLOAD_TYPE_CAPABILITY\x10\tB\x83\x01\n\x0b\x63om.auth.v1B\tAuthProtoP\x01Z,github.com/janearc/blm/gen/go/auth/v1;authv1\xa2\x02\x03\x41XX\xaa\x02\x07\x41uth.V1\xca\x02\x07\x41uth\\V1\xe2\x02\x13\x41uth\\V1\\GPBMetadata\xea\x02\x08\x41uth::V1b\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x12\x61uth/v1/auth.proto\x12\x07\x61uth.v1\"U\n\x0b\x41uthPayload\x12,\n\x04type\x18\x01 \x01(\x0e\x32\x18.auth.v1.AuthPayloadTypeR\x04type\x12\x18\n\x07payload\x18\x02 \x01(\x0cR\x07payload*\xc0\x02\n\x0f\x41uthPayloadType\x12!\n\x1d\x41UTH_PAYLOAD_TYPE_UNSPECIFIED\x10\x00\x12\x1b\n\x17\x41UTH_PAYLOAD_TYPE_OAUTH\x10\x01\x12\x1a\n\x16\x41UTH_PAYLOAD_TYPE_SAML\x10\x02\x12\x1e\n\x1a\x41UTH_PAYLOAD_TYPE_BAREWORD\x10\x03\x12\x19\n\x15\x41UTH_PAYLOAD_TYPE_JWT\x10\x04\x12\x1a\n\x16\x41UTH_PAYLOAD_TYPE_MTLS\x10\x05\x12\x1d\n\x19\x41UTH_PAYLOAD_TYPE_API_KEY\x10\x06\x12\x1b\n\x17\x41UTH_PAYLOAD_TYPE_BASIC\x10\x07\x12\x1c\n\x18\x41UTH_PAYLOAD_TYPE_BEARER\x10\x08\x12 \n\x1c\x41UTH_PAYLOAD_TYPE_CAPABILITY\x10\tB\x8f\x01\n\x0b\x63om.auth.v1B\tAuthProtoP\x01Z8github.com/janearc/big-little-mesh/gen/go/auth/v1;authv1\xa2\x02\x03\x41XX\xaa\x02\x07\x41uth.V1\xca\x02\x07\x41uth\\V1\xe2\x02\x13\x41uth\\V1\\GPBMetadata\xea\x02\x08\x41uth::V1b\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'auth.v1.auth_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   _globals['DESCRIPTOR']._loaded_options = None
-  _globals['DESCRIPTOR']._serialized_options = b'\n\013com.auth.v1B\tAuthProtoP\001Z,github.com/janearc/blm/gen/go/auth/v1;authv1\242\002\003AXX\252\002\007Auth.V1\312\002\007Auth\\V1\342\002\023Auth\\V1\\GPBMetadata\352\002\010Auth::V1'
+  _globals['DESCRIPTOR']._serialized_options = b'\n\013com.auth.v1B\tAuthProtoP\001Z8github.com/janearc/big-little-mesh/gen/go/auth/v1;authv1\242\002\003AXX\252\002\007Auth.V1\312\002\007Auth\\V1\342\002\023Auth\\V1\\GPBMetadata\352\002\010Auth::V1'
   _globals['_AUTHPAYLOADTYPE']._serialized_start=119
   _globals['_AUTHPAYLOADTYPE']._serialized_end=439
   _globals['_AUTHPAYLOAD']._serialized_start=31

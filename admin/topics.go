@@ -1,6 +1,6 @@
-// Package admin is good-citizen's Kafka administration surface: the operations
+// Package admin is frood's Kafka administration surface: the operations
 // the bus owner (kafka-svc) needs on top of plain emit/consume. This is the
-// "superset" -- a simple citizen produces and consumes; kafka-svc also provisions
+// "superset" -- a simple frood produces and consumes; kafka-svc also provisions
 // the topics the fleet agreed on. Codifying it here means topic creation is
 // idempotent library code that kafka-svc calls, not a hand-run `kafka-topics`
 // command that drifts.

@@ -26,7 +26,7 @@ class Manifest:
     # the one canonical manifest a birb emits, as a typed record. it is NOT a wire contract
     # (bento.proto is the wire SOT); it is a DERIVED view that crosses the disk + HTTP/CLI
     # edge, so it is a plain frozen dataclass -- the standard's "a typed model for the
-    # non-mesh edges" without dragging a validation dep into the core citizen surface. the
+    # non-mesh edges" without dragging a validation dep into the core frood surface. the
     # field set is fixed; `ok` is the single success signal and is always `state == DONE`.
     bento_id: str
     kind: str

@@ -144,11 +144,11 @@ def test_ack_shape():
 
 
 def test_serve_inbox_builds_and_drives(tmp_path, monkeypatch):
-    # serve_inbox wires good_citizen.watcher to a build-bento-and-drive handler over a
+    # serve_inbox wires frood.watcher to a build-bento-and-drive handler over a
     # provider. drive the watcher one pass (monkeypatch watch -> a single scan) and assert
     # the source was cooked.
-    from good_citizen import watcher
-    from good_citizen.provider import FilesystemProvider
+    from frood import watcher
+    from frood.provider import FilesystemProvider
 
     inbox = tmp_path / "inbox"
     inbox.mkdir()

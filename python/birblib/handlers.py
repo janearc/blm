@@ -16,8 +16,8 @@ import shutil
 from pathlib import Path
 
 from bento.v1 import bento_pb2
-from good_citizen import fsm
-from good_citizen.provider import FilesystemProvider
+from frood import fsm
+from frood.provider import FilesystemProvider
 
 from birblib.bento import BirbBento, Manifest
 

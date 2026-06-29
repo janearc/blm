@@ -3,9 +3,9 @@ package dataprovider_test
 import (
 	"context"
 
-	"github.com/janearc/blm/dataprovider"
-	authv1 "github.com/janearc/blm/gen/go/auth/v1"
-	dpv1 "github.com/janearc/blm/gen/go/dataprovider/v1"
+	"github.com/janearc/big-little-mesh/dataprovider"
+	authv1 "github.com/janearc/big-little-mesh/gen/go/auth/v1"
+	dpv1 "github.com/janearc/big-little-mesh/gen/go/dataprovider/v1"
 )
 
 // Example shows a consumer reading a cell from a DataProvider. It is written to stand on

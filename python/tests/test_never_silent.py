@@ -9,7 +9,7 @@ import pytest
 from birblib import driver, service
 from birblib.bento import BirbBento
 from birblib.handlers import BirbHandlers, CookResult
-from good_citizen.provider import FilesystemProvider
+from frood.provider import FilesystemProvider
 
 
 class RecordingProvider(FilesystemProvider):

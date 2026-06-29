@@ -1,14 +1,15 @@
-# birblib -- the birb archetype layer on top of blm's good_citizen.
+# birblib -- the birb archetype layer on top of Big Little Mesh's frood.
 #
-# blm gave the fleet a pipeline for building pipelines: the bento (the unit of work), the
-# banchan (an irreducible element), and a generated FSM the work flows through. every birb
+# Big Little Mesh gave the fleet a pipeline for building pipelines: the bento (the unit of
+# work), the banchan (an irreducible element), and a generated FSM the work flows through.
+# every birb
 # (magpie, grackle, sintra, liarbird, lloyd, ...) then re-improvised the same scaffold
 # around it -- build a bento, walk the stages, pick a backend, write a manifest, watch an
 # inbox, expose a CLI/daemon -- and the copies drifted. birblib is that scaffold, lifted
 # once: a ported birb becomes a thin subclass, and a new birb is born small because it
 # imports the lib instead of copying it.
 #
-# birblib depends on good_citizen (the bus/mesh citizen layer, generic to ALL pipelines)
+# birblib depends on frood (the bus/mesh frood layer, generic to ALL pipelines)
 # and knows nothing birb-specific. a birb declares its kind, banchans, and recipe, and
 # implements ONE method -- cook(). everything below is the shared surface it builds on.
 

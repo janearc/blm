@@ -1,5 +1,5 @@
-# python build artifacts. blm had no .gitignore, so compiled bytecode got committed
-# (gen/python + python/good_citizen) -- the P6 hygiene the good-citizen design flagged.
+# python build artifacts. Big Little Mesh had no .gitignore, so compiled bytecode got committed
+# (gen/python + python/frood) -- the P6 hygiene the frood design flagged.
 __pycache__/
 *.pyc
 *.pyo

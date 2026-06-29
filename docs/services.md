@@ -1,13 +1,13 @@
 # Services: the listener archetype (resident, queried, stateful)
 
-blm has had one citizen archetype: the pipeline -- the **watcher**. Work is pushed
+Big Little Mesh has had one frood archetype: the pipeline -- the **watcher**. Work is pushed
 into it, it watches its inbox for churn, walks each bento through a state machine, and
 when the work is done it is done. It owns no durable store; it is, in the way that
 matters, ephemeral. That archetype is described in [pipelines.md](pipelines.md).
 
 This document describes the second archetype: the resident service -- the **listener**.
 A listener is not fed; it is *queried*. It parks on a socket, answers requests, and owns
-durable state. Both are first-class citizens of the same mesh, built on the same shared
+durable state. Both are first-class froods of the same mesh, built on the same shared
 layer; they differ in how they wake, what they keep, and how long they live.
 
 ## Two archetypes
@@ -22,7 +22,7 @@ layer; they differ in how they wake, what they keep, and how long they live.
 
 The watcher is **push**: something drops work in, the watcher reacts. The listener is
 **pull**: something wants an answer, the listener has it. Neither polls the other, and
-neither archetype is more of a citizen than the other -- they are two answers to two
+neither archetype is more of a frood than the other -- they are two answers to two
 different questions, "what happens to this work?" and "what is true right now?"
 
 ## Why a listener does not spin
@@ -79,9 +79,9 @@ costs a slow, quiet trickle of retries, not a hot loop. This is the listener equ
 the pipeline's `PARTIAL` discipline -- when the world is not ready, degrade quietly rather
 than spin.
 
-## Citizenship: what a listener keeps, and what it drops
+## Froodship: what a listener keeps, and what it drops
 
-Both archetypes are built on the shared citizen layer, and a listener keeps the parts that
+Both archetypes are built on the shared frood layer, and a listener keeps the parts that
 make a thing a member of the mesh:
 
 - **identity** -- it knows its own name and registers under it;

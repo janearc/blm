@@ -1,4 +1,4 @@
-module github.com/janearc/blm
+module github.com/janearc/big-little-mesh
 
 go 1.26.4
 

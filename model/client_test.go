@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	modelv1 "github.com/janearc/blm/gen/go/model/v1"
+	modelv1 "github.com/janearc/big-little-mesh/gen/go/model/v1"
 )
 
 func discoveryServer(body string) *httptest.Server {

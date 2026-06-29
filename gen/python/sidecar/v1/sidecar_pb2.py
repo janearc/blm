@@ -24,14 +24,14 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x18sidecar/v1/sidecar.proto\x12\nsidecar.v1\"\xce\x01\n\x11SidecarDescriptor\x12\x12\n\x04name\x18\x01 \x01(\tR\x04name\x12\x36\n\ncapability\x18\x02 \x01(\x0e\x32\x16.sidecar.v1.CapabilityR\ncapability\x12\x30\n\x08language\x18\x03 \x01(\x0e\x32\x14.sidecar.v1.LanguageR\x08language\x12\x1a\n\x08\x65ndpoint\x18\x04 \x01(\tR\x08\x65ndpoint\x12\x1f\n\x0bhealth_path\x18\x05 \x01(\tR\nhealthPath*>\n\nCapability\x12\x1a\n\x16\x43\x41PABILITY_UNSPECIFIED\x10\x00\x12\x14\n\x10\x43\x41PABILITY_MODEL\x10\x01*^\n\x08Language\x12\x18\n\x14LANGUAGE_UNSPECIFIED\x10\x00\x12\x12\n\x0eLANGUAGE_SWIFT\x10\x01\x12\x0f\n\x0bLANGUAGE_GO\x10\x02\x12\x13\n\x0fLANGUAGE_PYTHON\x10\x03\x42\x9b\x01\n\x0e\x63om.sidecar.v1B\x0cSidecarProtoP\x01Z2github.com/janearc/blm/gen/go/sidecar/v1;sidecarv1\xa2\x02\x03SXX\xaa\x02\nSidecar.V1\xca\x02\nSidecar\\V1\xe2\x02\x16Sidecar\\V1\\GPBMetadata\xea\x02\x0bSidecar::V1b\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x18sidecar/v1/sidecar.proto\x12\nsidecar.v1\"\xce\x01\n\x11SidecarDescriptor\x12\x12\n\x04name\x18\x01 \x01(\tR\x04name\x12\x36\n\ncapability\x18\x02 \x01(\x0e\x32\x16.sidecar.v1.CapabilityR\ncapability\x12\x30\n\x08language\x18\x03 \x01(\x0e\x32\x14.sidecar.v1.LanguageR\x08language\x12\x1a\n\x08\x65ndpoint\x18\x04 \x01(\tR\x08\x65ndpoint\x12\x1f\n\x0bhealth_path\x18\x05 \x01(\tR\nhealthPath*>\n\nCapability\x12\x1a\n\x16\x43\x41PABILITY_UNSPECIFIED\x10\x00\x12\x14\n\x10\x43\x41PABILITY_MODEL\x10\x01*^\n\x08Language\x12\x18\n\x14LANGUAGE_UNSPECIFIED\x10\x00\x12\x12\n\x0eLANGUAGE_SWIFT\x10\x01\x12\x0f\n\x0bLANGUAGE_GO\x10\x02\x12\x13\n\x0fLANGUAGE_PYTHON\x10\x03\x42\xa7\x01\n\x0e\x63om.sidecar.v1B\x0cSidecarProtoP\x01Z>github.com/janearc/big-little-mesh/gen/go/sidecar/v1;sidecarv1\xa2\x02\x03SXX\xaa\x02\nSidecar.V1\xca\x02\nSidecar\\V1\xe2\x02\x16Sidecar\\V1\\GPBMetadata\xea\x02\x0bSidecar::V1b\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'sidecar.v1.sidecar_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   _globals['DESCRIPTOR']._loaded_options = None
-  _globals['DESCRIPTOR']._serialized_options = b'\n\016com.sidecar.v1B\014SidecarProtoP\001Z2github.com/janearc/blm/gen/go/sidecar/v1;sidecarv1\242\002\003SXX\252\002\nSidecar.V1\312\002\nSidecar\\V1\342\002\026Sidecar\\V1\\GPBMetadata\352\002\013Sidecar::V1'
+  _globals['DESCRIPTOR']._serialized_options = b'\n\016com.sidecar.v1B\014SidecarProtoP\001Z>github.com/janearc/big-little-mesh/gen/go/sidecar/v1;sidecarv1\242\002\003SXX\252\002\nSidecar.V1\312\002\nSidecar\\V1\342\002\026Sidecar\\V1\\GPBMetadata\352\002\013Sidecar::V1'
   _globals['_CAPABILITY']._serialized_start=249
   _globals['_CAPABILITY']._serialized_end=311
   _globals['_LANGUAGE']._serialized_start=313

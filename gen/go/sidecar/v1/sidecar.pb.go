@@ -236,8 +236,8 @@ const file_sidecar_v1_sidecar_proto_rawDesc = "" +
 	"\x14LANGUAGE_UNSPECIFIED\x10\x00\x12\x12\n" +
 	"\x0eLANGUAGE_SWIFT\x10\x01\x12\x0f\n" +
 	"\vLANGUAGE_GO\x10\x02\x12\x13\n" +
-	"\x0fLANGUAGE_PYTHON\x10\x03B\x9b\x01\n" +
-	"\x0ecom.sidecar.v1B\fSidecarProtoP\x01Z2github.com/janearc/blm/gen/go/sidecar/v1;sidecarv1\xa2\x02\x03SXX\xaa\x02\n" +
+	"\x0fLANGUAGE_PYTHON\x10\x03B\xa7\x01\n" +
+	"\x0ecom.sidecar.v1B\fSidecarProtoP\x01Z>github.com/janearc/big-little-mesh/gen/go/sidecar/v1;sidecarv1\xa2\x02\x03SXX\xaa\x02\n" +
 	"Sidecar.V1\xca\x02\n" +
 	"Sidecar\\V1\xe2\x02\x16Sidecar\\V1\\GPBMetadata\xea\x02\vSidecar::V1b\x06proto3"
 

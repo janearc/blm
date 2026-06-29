@@ -61,7 +61,7 @@ for the keys whose indexed fields satisfy a set of `predicates`; the response is
 cells. `limit` bounds the result set, and `next_page_token` is reserved for pagination — no
 behavior yet, but the field is claimed so `Query` is not locked into a single page.
 
-`shard_hint` is optional and provisional. blm is a `nodes == 1` mesh: we ignore sharding
+`shard_hint` is optional and provisional. Big Little Mesh is a `nodes == 1` mesh: we ignore sharding
 entirely and keep the field to pretend we care. It is there for Schemaless fidelity and is a
 no-op for us.
 
@@ -121,7 +121,7 @@ ran outside Uber. We do it anyway, because the shape is good and the discipline 
   not inter-service auth, don't conflate them. We carry an opaque per-request credential instead,
   because a 2026 mesh should not be root-if-you-can-ping-it.
 - **The seam, not the system.** The credential is opaque pass-through today, validated by a stub;
-  the real validator is `blm/libauth`, built when something forces it (e.g. when `intruder`
+  the real validator is `big-little-mesh/libauth`, built when something forces it (e.g. when `intruder`
   connects in and starts writing files). The IdP is GitHub today, swappable to Sign in with Apple
   by configuration, not by changing this contract.
 

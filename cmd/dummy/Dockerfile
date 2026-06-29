@@ -1,7 +1,7 @@
 # Stage 1: build the static dummy binary.
 #
 # Unlike the consumer repos (delightd, paling) that gitignore gen/ and regenerate
-# bindings at build, blm COMMITS its generated bindings (gen/ is tracked, so
+# bindings at build, Big Little Mesh COMMITS its generated bindings (gen/ is tracked, so
 # consumers can `go get` them). The dummy therefore compiles with just the module
 # cache and a static `go build` -- no buf, no codegen toolchain in the image.
 FROM golang:1.26-alpine AS builder

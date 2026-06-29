@@ -730,9 +730,9 @@ const file_bento_v1_bento_proto_rawDesc = "" +
 	"\x1eBANCHAN_ASSET_KIND_UNSPECIFIED\x10\x00\x12!\n" +
 	"\x1dBANCHAN_ASSET_KIND_PRE_FLIGHT\x10\x01\x12&\n" +
 	"\"BANCHAN_ASSET_KIND_ACCEPTANCE_TEST\x10\x02\x12)\n" +
-	"%BANCHAN_ASSET_KIND_COMPATIBILITY_TEST\x10\x03B\x8b\x01\n" +
+	"%BANCHAN_ASSET_KIND_COMPATIBILITY_TEST\x10\x03B\x97\x01\n" +
 	"\fcom.bento.v1B\n" +
-	"BentoProtoP\x01Z.github.com/janearc/blm/gen/go/bento/v1;bentov1\xa2\x02\x03BXX\xaa\x02\bBento.V1\xca\x02\bBento\\V1\xe2\x02\x14Bento\\V1\\GPBMetadata\xea\x02\tBento::V1b\x06proto3"
+	"BentoProtoP\x01Z:github.com/janearc/big-little-mesh/gen/go/bento/v1;bentov1\xa2\x02\x03BXX\xaa\x02\bBento.V1\xca\x02\bBento\\V1\xe2\x02\x14Bento\\V1\\GPBMetadata\xea\x02\tBento::V1b\x06proto3"
 
 var (
 	file_bento_v1_bento_proto_rawDescOnce sync.Once

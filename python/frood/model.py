@@ -1,9 +1,9 @@
-# good-citizen model client (Python half), mirroring the Go client.
+# frood model client (Python half), mirroring the Go client.
 #
 # resolve a logical model name to a backend via delightd's discovery, fail-closed,
 # and invoke it by provider. paling/magpie daemons use this; crepe/delightd use the
 # Go client; both over the same model.v1 contract. Generalized from paling's
-# modelclient -- stdlib only, no deps, so any Python citizen can import it.
+# modelclient -- stdlib only, no deps, so any Python frood can import it.
 #
 # fail-closed is deliberate (the availability mandate): if delightd is down or nothing
 # healthy serves the model, raise ModelUnavailable rather than inventing a local

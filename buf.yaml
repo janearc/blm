@@ -1,4 +1,4 @@
-# buf module config for blm's contracts. The protos here are the single source
+# buf module config for Big Little Mesh's contracts. The protos here are the single source
 # of truth; Go (and Python via betterproto) are generated from them, never
 # hand-written. See buf.gen.yaml for the generation plugins.
 version: v2

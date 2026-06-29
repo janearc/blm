@@ -34,7 +34,7 @@ wheels = [
 ]
 
 [[package]]
-name = "blm-good-citizen"
+name = "big-little-mesh-frood"
 version = "0.4.1"
 source = { editable = "." }
 dependencies = [

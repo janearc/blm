@@ -1,6 +1,6 @@
 // swift-tools-version: 6.0
 //
-// The blm Swift package — one package rooted at the repo, mirroring the single Go
+// The Big Little Mesh Swift package — one package rooted at the repo, mirroring the single Go
 // module. It spans the generated contracts and the apple-silicon on-device provider:
 //
 //   Contracts        generated Swift Codable for the contracts (gen/swift), read-only
@@ -14,7 +14,7 @@
 import PackageDescription
 
 let package = Package(
-    name: "blm",
+    name: "big-little-mesh",
     platforms: [
         .macOS("26.0"),
     ],

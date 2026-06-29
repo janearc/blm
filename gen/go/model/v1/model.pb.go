@@ -730,9 +730,9 @@ const file_model_v1_model_proto_rawDesc = "" +
 	"\x1aPROVIDER_OPENAI_COMPATIBLE\x10\x03\x12\x16\n" +
 	"\x12PROVIDER_ANTHROPIC\x10\x04\x12\x14\n" +
 	"\x10PROVIDER_COMFYUI\x10\x05\x12\x1c\n" +
-	"\x18PROVIDER_APPLE_ON_DEVICE\x10\x06B\x8b\x01\n" +
+	"\x18PROVIDER_APPLE_ON_DEVICE\x10\x06B\x97\x01\n" +
 	"\fcom.model.v1B\n" +
-	"ModelProtoP\x01Z.github.com/janearc/blm/gen/go/model/v1;modelv1\xa2\x02\x03MXX\xaa\x02\bModel.V1\xca\x02\bModel\\V1\xe2\x02\x14Model\\V1\\GPBMetadata\xea\x02\tModel::V1b\x06proto3"
+	"ModelProtoP\x01Z:github.com/janearc/big-little-mesh/gen/go/model/v1;modelv1\xa2\x02\x03MXX\xaa\x02\bModel.V1\xca\x02\bModel\\V1\xe2\x02\x14Model\\V1\\GPBMetadata\xea\x02\tModel::V1b\x06proto3"
 
 var (
 	file_model_v1_model_proto_rawDescOnce sync.Once

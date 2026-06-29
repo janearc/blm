@@ -1,15 +1,15 @@
-# Code generation from blm's contracts. Managed mode retargets every proto's
-# go_package to blm's module so generated Go lands under gen/go/... with the right
+# Code generation from Big Little Mesh's contracts. Managed mode retargets every proto's
+# go_package to Big Little Mesh's module so generated Go lands under gen/go/... with the right
 # import paths, without each .proto hard-coding it. Go today; betterproto Python
 # is added next (Max: pydantic ergonomics, protobuf wire); Rust the day we want it.
 # Generated code IS committed here (unlike services that gitignore gen/) because
-# good-citizen is imported as a library -- consumers go get it, they don't regen.
+# frood is imported as a library -- consumers go get it, they don't regen.
 version: v2
 managed:
   enabled: true
   override:
     - file_option: go_package_prefix
-      value: github.com/janearc/blm/gen/go
+      value: github.com/janearc/big-little-mesh/gen/go
 plugins:
   - local: protoc-gen-go
     out: gen/go

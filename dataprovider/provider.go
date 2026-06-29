@@ -12,7 +12,7 @@ package dataprovider
 import (
 	"context"
 
-	dpv1 "github.com/janearc/blm/gen/go/dataprovider/v1"
+	dpv1 "github.com/janearc/big-little-mesh/gen/go/dataprovider/v1"
 )
 
 // DataProvider is the Go view of the dataprovider.v1 contract: an append-only, immutable

@@ -1,14 +1,14 @@
 # Providers: the I/O seam
 
 A pipeline does three kinds of I/O: it takes work in, it emits results out, and it announces
-that a result is ready. In blm all three go through one seam — a **Provider** — so *where*
+that a result is ready. In Big Little Mesh all three go through one seam — a **Provider** — so *where*
 the work comes from and *where* the results go is configuration, not code.
 
     read    intake          -> new units of work
     write   output          -> an artifact / record landed at a destination
     notify  notification    -> "a result is ready"
 
-`good_citizen.provider` defines the contract and ships one implementation,
+`frood.provider` defines the contract and ships one implementation,
 `FilesystemProvider`. The watcher is a thin consumer of `read`; the birb scaffold routes
 every write through `write` and announces every terminal through `notify`.
 

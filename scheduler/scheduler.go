@@ -1,8 +1,8 @@
-// Package scheduler is good-citizen's "alarms, not polling" primitive: a thin
-// wrapper over go-quartz so a citizen schedules recurring work without hand-
+// Package scheduler is frood's "alarms, not polling" primitive: a thin
+// wrapper over go-quartz so a frood schedules recurring work without hand-
 // rolling timers. This is the Cadence lesson applied -- we built our own
 // scheduler once and it was a maintenance burden; here we wrap an existing
-// library and expose just the two shapes citizens actually need (fixed interval
+// library and expose just the two shapes froods actually need (fixed interval
 // and cron). Durable multi-step workflow orchestration (Temporal) is a separate,
 // later concern, deliberately not in scope.
 package scheduler
@@ -61,7 +61,7 @@ func (s *Scheduler) Cron(name, expr string, fn func(context.Context) error) erro
 
 // schedule wraps fn as a go-quartz job and registers it under trig. The wrapper
 // logs a job error so a failing tick is visible but never wedges the scheduler --
-// the same best-effort stance the rest of good-citizen takes.
+// the same best-effort stance the rest of frood takes.
 func (s *Scheduler) schedule(name string, trig quartz.Trigger, fn func(context.Context) error) error {
 	fjob := job.NewFunctionJob(func(ctx context.Context) (any, error) {
 		if err := fn(ctx); err != nil {

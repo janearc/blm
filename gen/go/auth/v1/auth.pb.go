@@ -174,8 +174,8 @@ const file_auth_v1_auth_proto_rawDesc = "" +
 	"\x19AUTH_PAYLOAD_TYPE_API_KEY\x10\x06\x12\x1b\n" +
 	"\x17AUTH_PAYLOAD_TYPE_BASIC\x10\a\x12\x1c\n" +
 	"\x18AUTH_PAYLOAD_TYPE_BEARER\x10\b\x12 \n" +
-	"\x1cAUTH_PAYLOAD_TYPE_CAPABILITY\x10\tB\x83\x01\n" +
-	"\vcom.auth.v1B\tAuthProtoP\x01Z,github.com/janearc/blm/gen/go/auth/v1;authv1\xa2\x02\x03AXX\xaa\x02\aAuth.V1\xca\x02\aAuth\\V1\xe2\x02\x13Auth\\V1\\GPBMetadata\xea\x02\bAuth::V1b\x06proto3"
+	"\x1cAUTH_PAYLOAD_TYPE_CAPABILITY\x10\tB\x8f\x01\n" +
+	"\vcom.auth.v1B\tAuthProtoP\x01Z8github.com/janearc/big-little-mesh/gen/go/auth/v1;authv1\xa2\x02\x03AXX\xaa\x02\aAuth.V1\xca\x02\aAuth\\V1\xe2\x02\x13Auth\\V1\\GPBMetadata\xea\x02\bAuth::V1b\x06proto3"
 
 var (
 	file_auth_v1_auth_proto_rawDescOnce sync.Once

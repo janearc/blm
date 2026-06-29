@@ -1,11 +1,11 @@
-# tests for good_citizen.emit: it POSTs the event as protojson, is best-effort (never
+# tests for frood.emit: it POSTs the event as protojson, is best-effort (never
 # raises), and the fsm Emitter builds the right event from (bento, state).
 import urllib.request
 
 from google.protobuf import json_format
 
 from bento.v1 import bento_pb2
-from good_citizen import emit
+from frood import emit
 
 
 def test_emit_posts_protojson(monkeypatch):

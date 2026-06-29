@@ -1,4 +1,4 @@
-// Package watcher is the good-citizen watch loop: a generic poll loop driven by
+// Package watcher is the frood watch loop: a generic poll loop driven by
 // a pluggable Oracle. It is the generalization of delightd's git oracle -- in
 // delightd, the only git-specific part was "is the working tree dirty?"; the
 // per-target goroutine + ticker + react-on-change machinery was already generic.
@@ -32,11 +32,11 @@ type Oracle interface {
 	Name() string
 	// Poll reports whether there is work right now. An error is logged by the
 	// loop and treated as "no work this tick" -- a flaky oracle must not wedge
-	// the loop, the same best-effort stance the rest of good-citizen takes.
+	// the loop, the same best-effort stance the rest of frood takes.
 	Poll(ctx context.Context) (Result, error)
 }
 
-// Handler reacts to a positive poll. For an event-driven citizen this is
+// Handler reacts to a positive poll. For an event-driven frood this is
 // typically "emit a Kafka event describing the work"; the service that watches
 // is the service that acts. A handler error is logged and the loop continues.
 type Handler func(ctx context.Context, r Result) error

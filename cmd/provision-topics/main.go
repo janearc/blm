@@ -16,7 +16,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/janearc/blm/admin"
+	"github.com/janearc/big-little-mesh/admin"
 )
 
 func main() {

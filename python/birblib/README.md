@@ -1,10 +1,10 @@
 # birblib
 
-The birb archetype layer on top of blm's `good_citizen`. A birb is mostly *declaration*
+The birb archetype layer on top of Big Little Mesh's `frood`. A birb is mostly *declaration*
 and almost no orchestration: it declares its kind, its banchans, and its recipe, and
 implements one method — `cook()`. birblib provides the rest.
 
-birblib depends on `good_citizen` (the bus/mesh citizen layer, generic to all pipelines)
+birblib depends on `frood` (the bus/mesh frood layer, generic to all pipelines)
 and knows nothing birb-specific. See `design-docs/blm-substrate-contracts-design.md` in
 `archaea` for the full rationale; this README is the usage view.
 
@@ -84,12 +84,12 @@ tree, never spread at top level.
 - **`birblib.recipe`** — `Request` + `resolve(recipe_values, overrides, overridable)`:
   lay caller overrides over the pipeline's tuned values, reject unknown keys, record
   overriding as the `anti_pattern` signal. (Recipe scope is open decision §9.2.)
-- **`birblib.service`** — `serve_inbox(provider, …)` drives a `good_citizen` watcher over a
+- **`birblib.service`** — `serve_inbox(provider, …)` drives a `frood` watcher over a
   [Provider](../../docs/providers.md) (intake, the persistent restart-surviving dedup, the
   partial-write guard, and the terminal notify are the provider's job) with the real sidecar
   emit; `build_app(...)` is the `/health`, `202`-submit + `GET /jobs/{id}` poll, and
   `/artifacts/{id}/{name}` traversal-guarded surface; `ack(...)` is the JSON-by-default CLI
-  ACK. The HTTP half needs the optional extra: `pip install blm-good-citizen[service]`.
+  ACK. The HTTP half needs the optional extra: `pip install big-little-mesh-frood[service]`.
   **`build_app`'s `POST /jobs` is a single-node/local-dev affordance** — it persists the
   NOTICED bento then drives it on an in-process thread; the *fleet* submit path is bus-enqueue
   (persist, emit NOTICED, let a bus worker drive it). The per-modality `/v1` facade stays the
@@ -108,9 +108,9 @@ tree, never spread at top level.
 
 ## Open decisions (track in the PR, not frozen here)
 
-1. **Lib name/home** (§9.1): `birblib` ships in the `blm-good-citizen` distribution as a
+1. **Lib name/home** (§9.1): `birblib` ships in the `big-little-mesh-frood` distribution as a
    distinct top-level package, to keep cross-repo installs to one git dependency on a
-   connectivity-hostile network. A separate `blm-birblib` distribution is a mechanical move.
+   connectivity-hostile network. A separate `big-little-mesh-birblib` distribution is a mechanical move.
 2. **Recipe scope** (§9.2): leaf-birbs-only vs substrate-wide. `birblib.recipe` is the
    minimal override-recording seam; the `params` shape is not frozen.
 3. **PARTIAL / convergence** (§9.3): `on_partial → DONE` is the documented stopgap.

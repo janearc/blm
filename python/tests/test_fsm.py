@@ -1,8 +1,8 @@
-# tests for good_citizen.fsm: step() drives ONE transition and emits, halting on
+# tests for frood.fsm: step() drives ONE transition and emits, halting on
 # UNSPECIFIED; an undeclared/reserved next state is rejected (containment). Parity with
 # the Go harness.
 from bento.v1 import bento_pb2
-from good_citizen import fsm
+from frood import fsm
 
 
 class _H(fsm.Handlers):

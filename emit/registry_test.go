@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	observabilityv1 "github.com/janearc/blm/gen/go/observability/v1"
+	observabilityv1 "github.com/janearc/big-little-mesh/gen/go/observability/v1"
 )
 
 // TestNew_RejectsEmptyBrokers pins the fail-closed contract: no brokers means

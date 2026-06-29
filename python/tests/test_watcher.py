@@ -1,8 +1,8 @@
-# tests for good_citizen.watcher: it is now a thin consumer of a Provider -- it pulls
+# tests for frood.watcher: it is now a thin consumer of a Provider -- it pulls
 # sources from provider.read and never touches the filesystem itself. one bad source must
 # not abort the pass.
-from good_citizen import watcher
-from good_citizen.provider import Source
+from frood import watcher
+from frood.provider import Source
 
 
 class MockProvider:

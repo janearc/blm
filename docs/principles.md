@@ -1,8 +1,8 @@
-# blm principles
+# Big Little Mesh principles
 
 ## Contracts first; generate, don't hand-write
 
-blm aims for as little hand-written code as possible -- including code written by
+Big Little Mesh aims for as little hand-written code as possible -- including code written by
 an agent. We define our contracts in protobuf and generate the code that speaks
 them: Go and Python today, Rust the day we want it, all bound by the same
 contracts.

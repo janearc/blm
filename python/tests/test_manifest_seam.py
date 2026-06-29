@@ -95,7 +95,7 @@ def test_read_manifest_during_write_is_safe(tmp_path):
     assert service.read_manifest(tmp_path / "bentos", bento.pb.id) is None
 
     # a real atomic write (through the provider) replaces it cleanly, no .tmp leftover.
-    from good_citizen.provider import FilesystemProvider
+    from frood.provider import FilesystemProvider
     bento.write_manifest(_manifest(bento_id=bento.pb.id), FilesystemProvider())
     got = service.read_manifest(tmp_path / "bentos", bento.pb.id)
     assert got is not None and got.bento_id == bento.pb.id

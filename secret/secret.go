@@ -1,8 +1,8 @@
 // Package secret reads secret values that Kubernetes injected into the process
-// environment via a Secret's secretKeyRef. good-citizen deliberately does NOT
+// environment via a Secret's secretKeyRef. frood deliberately does NOT
 // call the Kubernetes API: the fleet contract is that a Secret is mounted into
-// the pod env (env.valueFrom.secretKeyRef), so a citizen just reads the env var.
-// This keeps citizens credential-free in their code and config -- the value
+// the pod env (env.valueFrom.secretKeyRef), so a frood just reads the env var.
+// This keeps froods credential-free in their code and config -- the value
 // arrives at runtime, injected by the operator, and never lives in a file or a
 // committed default. (See the kube-migration secrets rule.)
 package secret

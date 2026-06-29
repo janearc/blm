@@ -10,7 +10,7 @@
 //   • synthesis     — text → audio  (speech synthesizer + Personal Voice)
 //   • text          — text → text   (the on-device foundation model, "AFM") — next
 //
-// blm is optimized for Apple Silicon, and this is where that optimization lives.
+// Big Little Mesh is optimized for Apple Silicon, and this is where that optimization lives.
 // One arbiter fronts the shared chip (there is one ANE per host) so a machine never
 // floods its own silicon.
 

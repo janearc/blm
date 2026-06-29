@@ -3,9 +3,9 @@
 # vs audio vs video differ) stays the birb's own; the job API, health, and artifact
 # serving are the lib's.
 #
-# fastapi/uvicorn are an OPTIONAL extra (`blm-good-citizen[service]`): they are imported
+# fastapi/uvicorn are an OPTIONAL extra (`big-little-mesh-frood[service]`): they are imported
 # lazily inside the HTTP functions, so a birb that only wants the bento/handlers/daemon
-# never pays for them. the daemon half rides on good_citizen.watcher (stdlib) and needs no
+# never pays for them. the daemon half rides on frood.watcher (stdlib) and needs no
 # extra.
 
 import json
@@ -14,8 +14,8 @@ import threading
 import uuid
 from pathlib import Path
 
-from good_citizen import watcher
-from good_citizen import emit as _emit
+from frood import watcher
+from frood import emit as _emit
 
 from birblib.bento import Manifest
 from birblib.driver import _pb, _walk
@@ -180,7 +180,7 @@ def build_app(*, name, bentos_root, make_handlers, make_bento, sidecar_url=None,
 
 def ack(manifest: Manifest, message: str = "") -> dict:
     # the JSON a birb's CLI prints: an ACK of where the result landed, not the bytes. it
-    # is json-by-default (a birb is a good agent-citizen) and reports ok + the artifact
+    # is json-by-default (a birb is a good agent-frood) and reports ok + the artifact
     # path, so an agent caller can find the output and know whether it worked.
     out = {
         "status": "ok" if manifest.ok else "incomplete",

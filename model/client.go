@@ -1,4 +1,4 @@
-// Package model is good-citizen's model client: resolve a logical model name to a
+// Package model is frood's model client: resolve a logical model name to a
 // ModelDescriptor and invoke it, dispatching on provider. It is the Go half of
 // the matched Go+Python pair (the Python client mirrors it, generalized from
 // paling's modelclient); both are first-class because the fleet does much of both.
@@ -21,7 +21,7 @@ import (
 	"strings"
 	"time"
 
-	modelv1 "github.com/janearc/blm/gen/go/model/v1"
+	modelv1 "github.com/janearc/big-little-mesh/gen/go/model/v1"
 )
 
 // ErrModelUnavailable means no healthy backend could be resolved for a model.

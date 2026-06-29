@@ -5,7 +5,7 @@ import json
 from bento.v1 import bento_pb2
 
 from birblib.bento import BirbBento, Manifest, state_name
-from good_citizen.provider import FilesystemProvider
+from frood.provider import FilesystemProvider
 
 # writes route through a provider now; the filesystem one is the default everywhere.
 _IO = FilesystemProvider()

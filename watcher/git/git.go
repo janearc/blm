@@ -1,9 +1,9 @@
 // Package git provides the git-churn watcher Oracle: "does this working tree
 // have uncommitted changes?". It is delightd's git oracle lifted into the
-// good-citizen watcher shape, so any citizen can watch a repo without
+// frood watcher shape, so any frood can watch a repo without
 // re-implementing it. go-git evaluates the tree in-process -- no shelling out to
 // the git binary -- and this dependency is isolated in its own package so a
-// citizen that only watches a directory does not pull go-git in.
+// frood that only watches a directory does not pull go-git in.
 package git
 
 import (
@@ -12,7 +12,7 @@ import (
 
 	"github.com/go-git/go-git/v5"
 
-	"github.com/janearc/blm/watcher"
+	"github.com/janearc/big-little-mesh/watcher"
 )
 
 // ChurnOracle reports working-tree churn for one repository path.

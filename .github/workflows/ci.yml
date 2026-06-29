@@ -1,7 +1,7 @@
 name: ci
 
-# blm is the fleet's contracts + the good-citizen Go library (with a small python
-# side for the MLX/betterproto surface). This is blm's own CI and the canonical gate
+# Big Little Mesh is the fleet's contracts + the frood Go library (with a small python
+# side for the MLX/betterproto surface). This is Big Little Mesh's own CI and the canonical gate
 # the rest of the fleet vendors from. Go builds and tests on ubuntu; the MLX runtime
 # is not exercised here.
 #
@@ -89,7 +89,7 @@ jobs:
           echo "gen is in sync with the contracts"
 
   python:
-    # blm's hand-written python gate: ruff + the docstring ban + pytest. The generated
+    # Big Little Mesh's hand-written python gate: ruff + the docstring ban + pytest. The generated
     # gen/ tree is exempt (not ours to restyle) and lives outside python/; the bounce
     # checker skips .venv. Tests get gen/ on the path via python/conftest.py.
     runs-on: ubuntu-latest

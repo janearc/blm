@@ -493,8 +493,8 @@ const file_observability_v1_observability_proto_rawDesc = "" +
 	"\x12HEALTH_STATE_GREEN\x10\x01\x12\x17\n" +
 	"\x13HEALTH_STATE_YELLOW\x10\x02\x12\x14\n" +
 	"\x10HEALTH_STATE_RED\x10\x03\x12\x1a\n" +
-	"\x16HEALTH_STATE_EXHAUSTED\x10\x04B\xcb\x01\n" +
-	"\x14com.observability.v1B\x12ObservabilityProtoP\x01Z>github.com/janearc/blm/gen/go/observability/v1;observabilityv1\xa2\x02\x03OXX\xaa\x02\x10Observability.V1\xca\x02\x10Observability\\V1\xe2\x02\x1cObservability\\V1\\GPBMetadata\xea\x02\x11Observability::V1b\x06proto3"
+	"\x16HEALTH_STATE_EXHAUSTED\x10\x04B\xd7\x01\n" +
+	"\x14com.observability.v1B\x12ObservabilityProtoP\x01ZJgithub.com/janearc/big-little-mesh/gen/go/observability/v1;observabilityv1\xa2\x02\x03OXX\xaa\x02\x10Observability.V1\xca\x02\x10Observability\\V1\xe2\x02\x1cObservability\\V1\\GPBMetadata\xea\x02\x11Observability::V1b\x06proto3"
 
 var (
 	file_observability_v1_observability_proto_rawDescOnce sync.Once

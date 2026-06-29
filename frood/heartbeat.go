@@ -1,8 +1,8 @@
-// Package citizen is the high-level good-citizen surface a service wires up: the
-// heartbeat every citizen emits, and (as good-citizen grows) the watch/secrets/
+// Package frood is the high-level surface a service wires up to become a frood of
+// the mesh: the heartbeat it emits, and (as the package grows) the watch/secrets/
 // scheduler glue. It sits on top of the emit package so a service gets fleet
 // observability for free by calling one function.
-package citizen
+package frood
 
 import (
 	"context"
@@ -12,8 +12,8 @@ import (
 
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/janearc/blm/emit"
-	observabilityv1 "github.com/janearc/blm/gen/go/observability/v1"
+	"github.com/janearc/big-little-mesh/emit"
+	observabilityv1 "github.com/janearc/big-little-mesh/gen/go/observability/v1"
 )
 
 const (
@@ -26,7 +26,7 @@ const (
 
 // Heartbeat emits a ServiceHealthHeartbeat for serviceName every interval via
 // pub, until ctx is cancelled. Best-effort: a publish failure is logged, never
-// fatal -- a citizen whose telemetry is down keeps doing its job. A nil pub is a
+// fatal -- a frood whose telemetry is down keeps doing its job. A nil pub is a
 // no-op (emission disabled), so a caller can hold one unconditionally and let a
 // missing broker be silent. Blocks; run it in a goroutine.
 //

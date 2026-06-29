@@ -2,15 +2,15 @@
 // versions:
 // 	protoc-gen-go v1.36.11
 // 	protoc        (unknown)
-// source: citizen/v1/citizen.proto
+// source: frood/v1/frood.proto
 
-// Package citizen.v1 is the universal citizen interface for the mesh: the minimum every
-// citizen -- watcher or listener (see docs/services.md) -- must expose so a peer or delightd
-// can learn who it is and what it speaks. It is a good_citizen concept (the shared mesh
-// layer), not specific to any one service. The interface is verified when a citizen
-// registers; see docs/citizens.md.
+// Package frood.v1 is the universal frood interface for the mesh: the minimum every
+// frood -- watcher or listener (see docs/services.md) -- must expose so a peer or delightd
+// can learn who it is and what it speaks. It is a frood concept (the shared mesh
+// layer), not specific to any one service. The interface is verified when a frood
+// registers; see docs/frood.md.
 
-package citizenv1
+package froodv1
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -27,17 +27,17 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// Identity is the who-am-I a citizen reports: enough to bind it to a declared project and to
+// Identity is the who-am-I a frood reports: enough to bind it to a declared project and to
 // key its heartbeat, discovery, and registration.
 type Identity struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// service_name is the citizen's own name -- the key it heartbeats under and is discovered by.
+	// service_name is the frood's own name -- the key it heartbeats under and is discovered by.
 	ServiceName string `protobuf:"bytes,1,opt,name=service_name,json=serviceName,proto3" json:"service_name,omitempty"`
-	// project is the declared registry.v1 Project name this citizen binds to. It is the name
-	// (a string), not the Project message -- citizen.v1 carries no dependency on the broker's
+	// project is the declared registry.v1 Project name this frood binds to. It is the name
+	// (a string), not the Project message -- frood.v1 carries no dependency on the broker's
 	// contract. delightd checks the project is one it manages at register.
 	Project string `protobuf:"bytes,2,opt,name=project,proto3" json:"project,omitempty"`
-	// version is the citizen's build/version string (e.g. a semver or `git describe`).
+	// version is the frood's build/version string (e.g. a semver or `git describe`).
 	Version       string `protobuf:"bytes,3,opt,name=version,proto3" json:"version,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -45,7 +45,7 @@ type Identity struct {
 
 func (x *Identity) Reset() {
 	*x = Identity{}
-	mi := &file_citizen_v1_citizen_proto_msgTypes[0]
+	mi := &file_frood_v1_frood_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -57,7 +57,7 @@ func (x *Identity) String() string {
 func (*Identity) ProtoMessage() {}
 
 func (x *Identity) ProtoReflect() protoreflect.Message {
-	mi := &file_citizen_v1_citizen_proto_msgTypes[0]
+	mi := &file_frood_v1_frood_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -70,7 +70,7 @@ func (x *Identity) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Identity.ProtoReflect.Descriptor instead.
 func (*Identity) Descriptor() ([]byte, []int) {
-	return file_citizen_v1_citizen_proto_rawDescGZIP(), []int{0}
+	return file_frood_v1_frood_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *Identity) GetServiceName() string {
@@ -94,7 +94,7 @@ func (x *Identity) GetVersion() string {
 	return ""
 }
 
-// ContractRef names one contract a citizen speaks. subject is the contract's
+// ContractRef names one contract a frood speaks. subject is the contract's
 // RecordNameStrategy identity -- the fully-qualified protobuf message name, e.g.
 // "observability.v1.ServiceHealthHeartbeat" -- which is the same key the bus and the schema
 // registry use, so a claim made here is checkable against what is actually registered.
@@ -109,7 +109,7 @@ type ContractRef struct {
 
 func (x *ContractRef) Reset() {
 	*x = ContractRef{}
-	mi := &file_citizen_v1_citizen_proto_msgTypes[1]
+	mi := &file_frood_v1_frood_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -121,7 +121,7 @@ func (x *ContractRef) String() string {
 func (*ContractRef) ProtoMessage() {}
 
 func (x *ContractRef) ProtoReflect() protoreflect.Message {
-	mi := &file_citizen_v1_citizen_proto_msgTypes[1]
+	mi := &file_frood_v1_frood_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -134,7 +134,7 @@ func (x *ContractRef) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ContractRef.ProtoReflect.Descriptor instead.
 func (*ContractRef) Descriptor() ([]byte, []int) {
-	return file_citizen_v1_citizen_proto_rawDescGZIP(), []int{1}
+	return file_frood_v1_frood_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *ContractRef) GetSubject() string {
@@ -151,11 +151,11 @@ func (x *ContractRef) GetVersion() string {
 	return ""
 }
 
-// ContractDescriptor is what a citizen claims to speak, split by direction so a peer can route
+// ContractDescriptor is what a frood claims to speak, split by direction so a peer can route
 // and delightd can later verify "you speak what you claim":
-//   - emits:    messages this citizen publishes onto the bus;
-//   - consumes: messages this citizen reads from the bus;
-//   - serves:   contracts this citizen answers directly as a service (an RPC / HTTP surface).
+//   - emits:    messages this frood publishes onto the bus;
+//   - consumes: messages this frood reads from the bus;
+//   - serves:   contracts this frood answers directly as a service (an RPC / HTTP surface).
 //
 // A watcher typically emits and consumes; a listener typically serves. These are claims made
 // at register time, to be checked against the registry and known contracts -- not trusted
@@ -171,7 +171,7 @@ type ContractDescriptor struct {
 
 func (x *ContractDescriptor) Reset() {
 	*x = ContractDescriptor{}
-	mi := &file_citizen_v1_citizen_proto_msgTypes[2]
+	mi := &file_frood_v1_frood_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -183,7 +183,7 @@ func (x *ContractDescriptor) String() string {
 func (*ContractDescriptor) ProtoMessage() {}
 
 func (x *ContractDescriptor) ProtoReflect() protoreflect.Message {
-	mi := &file_citizen_v1_citizen_proto_msgTypes[2]
+	mi := &file_frood_v1_frood_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -196,7 +196,7 @@ func (x *ContractDescriptor) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ContractDescriptor.ProtoReflect.Descriptor instead.
 func (*ContractDescriptor) Descriptor() ([]byte, []int) {
-	return file_citizen_v1_citizen_proto_rawDescGZIP(), []int{2}
+	return file_frood_v1_frood_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *ContractDescriptor) GetEmits() []*ContractRef {
@@ -220,49 +220,47 @@ func (x *ContractDescriptor) GetServes() []*ContractRef {
 	return nil
 }
 
-var File_citizen_v1_citizen_proto protoreflect.FileDescriptor
+var File_frood_v1_frood_proto protoreflect.FileDescriptor
 
-const file_citizen_v1_citizen_proto_rawDesc = "" +
+const file_frood_v1_frood_proto_rawDesc = "" +
 	"\n" +
-	"\x18citizen/v1/citizen.proto\x12\n" +
-	"citizen.v1\"g\n" +
+	"\x14frood/v1/frood.proto\x12\bfrood.v1\"g\n" +
 	"\bIdentity\x12!\n" +
 	"\fservice_name\x18\x01 \x01(\tR\vserviceName\x12\x18\n" +
 	"\aproject\x18\x02 \x01(\tR\aproject\x12\x18\n" +
 	"\aversion\x18\x03 \x01(\tR\aversionJ\x04\b\x04\x10\x10\"G\n" +
 	"\vContractRef\x12\x18\n" +
 	"\asubject\x18\x01 \x01(\tR\asubject\x12\x18\n" +
-	"\aversion\x18\x02 \x01(\tR\aversionJ\x04\b\x03\x10\b\"\xaf\x01\n" +
-	"\x12ContractDescriptor\x12-\n" +
-	"\x05emits\x18\x01 \x03(\v2\x17.citizen.v1.ContractRefR\x05emits\x123\n" +
-	"\bconsumes\x18\x02 \x03(\v2\x17.citizen.v1.ContractRefR\bconsumes\x12/\n" +
-	"\x06serves\x18\x03 \x03(\v2\x17.citizen.v1.ContractRefR\x06servesJ\x04\b\x04\x10\bB\x9b\x01\n" +
-	"\x0ecom.citizen.v1B\fCitizenProtoP\x01Z2github.com/janearc/blm/gen/go/citizen/v1;citizenv1\xa2\x02\x03CXX\xaa\x02\n" +
-	"Citizen.V1\xca\x02\n" +
-	"Citizen\\V1\xe2\x02\x16Citizen\\V1\\GPBMetadata\xea\x02\vCitizen::V1b\x06proto3"
+	"\aversion\x18\x02 \x01(\tR\aversionJ\x04\b\x03\x10\b\"\xa9\x01\n" +
+	"\x12ContractDescriptor\x12+\n" +
+	"\x05emits\x18\x01 \x03(\v2\x15.frood.v1.ContractRefR\x05emits\x121\n" +
+	"\bconsumes\x18\x02 \x03(\v2\x15.frood.v1.ContractRefR\bconsumes\x12-\n" +
+	"\x06serves\x18\x03 \x03(\v2\x15.frood.v1.ContractRefR\x06servesJ\x04\b\x04\x10\bB\x97\x01\n" +
+	"\fcom.frood.v1B\n" +
+	"FroodProtoP\x01Z:github.com/janearc/big-little-mesh/gen/go/frood/v1;froodv1\xa2\x02\x03FXX\xaa\x02\bFrood.V1\xca\x02\bFrood\\V1\xe2\x02\x14Frood\\V1\\GPBMetadata\xea\x02\tFrood::V1b\x06proto3"
 
 var (
-	file_citizen_v1_citizen_proto_rawDescOnce sync.Once
-	file_citizen_v1_citizen_proto_rawDescData []byte
+	file_frood_v1_frood_proto_rawDescOnce sync.Once
+	file_frood_v1_frood_proto_rawDescData []byte
 )
 
-func file_citizen_v1_citizen_proto_rawDescGZIP() []byte {
-	file_citizen_v1_citizen_proto_rawDescOnce.Do(func() {
-		file_citizen_v1_citizen_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_citizen_v1_citizen_proto_rawDesc), len(file_citizen_v1_citizen_proto_rawDesc)))
+func file_frood_v1_frood_proto_rawDescGZIP() []byte {
+	file_frood_v1_frood_proto_rawDescOnce.Do(func() {
+		file_frood_v1_frood_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_frood_v1_frood_proto_rawDesc), len(file_frood_v1_frood_proto_rawDesc)))
 	})
-	return file_citizen_v1_citizen_proto_rawDescData
+	return file_frood_v1_frood_proto_rawDescData
 }
 
-var file_citizen_v1_citizen_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
-var file_citizen_v1_citizen_proto_goTypes = []any{
-	(*Identity)(nil),           // 0: citizen.v1.Identity
-	(*ContractRef)(nil),        // 1: citizen.v1.ContractRef
-	(*ContractDescriptor)(nil), // 2: citizen.v1.ContractDescriptor
+var file_frood_v1_frood_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_frood_v1_frood_proto_goTypes = []any{
+	(*Identity)(nil),           // 0: frood.v1.Identity
+	(*ContractRef)(nil),        // 1: frood.v1.ContractRef
+	(*ContractDescriptor)(nil), // 2: frood.v1.ContractDescriptor
 }
-var file_citizen_v1_citizen_proto_depIdxs = []int32{
-	1, // 0: citizen.v1.ContractDescriptor.emits:type_name -> citizen.v1.ContractRef
-	1, // 1: citizen.v1.ContractDescriptor.consumes:type_name -> citizen.v1.ContractRef
-	1, // 2: citizen.v1.ContractDescriptor.serves:type_name -> citizen.v1.ContractRef
+var file_frood_v1_frood_proto_depIdxs = []int32{
+	1, // 0: frood.v1.ContractDescriptor.emits:type_name -> frood.v1.ContractRef
+	1, // 1: frood.v1.ContractDescriptor.consumes:type_name -> frood.v1.ContractRef
+	1, // 2: frood.v1.ContractDescriptor.serves:type_name -> frood.v1.ContractRef
 	3, // [3:3] is the sub-list for method output_type
 	3, // [3:3] is the sub-list for method input_type
 	3, // [3:3] is the sub-list for extension type_name
@@ -270,26 +268,26 @@ var file_citizen_v1_citizen_proto_depIdxs = []int32{
 	0, // [0:3] is the sub-list for field type_name
 }
 
-func init() { file_citizen_v1_citizen_proto_init() }
-func file_citizen_v1_citizen_proto_init() {
-	if File_citizen_v1_citizen_proto != nil {
+func init() { file_frood_v1_frood_proto_init() }
+func file_frood_v1_frood_proto_init() {
+	if File_frood_v1_frood_proto != nil {
 		return
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_citizen_v1_citizen_proto_rawDesc), len(file_citizen_v1_citizen_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_frood_v1_frood_proto_rawDesc), len(file_frood_v1_frood_proto_rawDesc)),
 			NumEnums:      0,
 			NumMessages:   3,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
-		GoTypes:           file_citizen_v1_citizen_proto_goTypes,
-		DependencyIndexes: file_citizen_v1_citizen_proto_depIdxs,
-		MessageInfos:      file_citizen_v1_citizen_proto_msgTypes,
+		GoTypes:           file_frood_v1_frood_proto_goTypes,
+		DependencyIndexes: file_frood_v1_frood_proto_depIdxs,
+		MessageInfos:      file_frood_v1_frood_proto_msgTypes,
 	}.Build()
-	File_citizen_v1_citizen_proto = out.File
-	file_citizen_v1_citizen_proto_goTypes = nil
-	file_citizen_v1_citizen_proto_depIdxs = nil
+	File_frood_v1_frood_proto = out.File
+	file_frood_v1_frood_proto_goTypes = nil
+	file_frood_v1_frood_proto_depIdxs = nil
 }

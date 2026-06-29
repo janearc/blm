@@ -1,9 +1,9 @@
-// Command dummy is good-citizen's reference service and its release gate: a new
-// good-citizen release is proven against the dummy, never against a production service
+// Command dummy is frood's reference service and its release gate: a new
+// frood release is proven against the dummy, never against a production service
 // (delightd, paling, ...). It has its own service id so its heartbeats and events are
 // distinguishable on the bus.
 //
-// dummy is the executable spec every citizen is modeled on. It does the full citizen
+// dummy is the executable spec every frood is modeled on. It does the full frood
 // loop: emit a heartbeat, watch an inbox, and -- for each new input -- drive a
 // SYNTHETIC bento through the generated bento FSM, emitting a BentoLifecycleEvent on
 // every transition (NOTICED -> COOK -> DONE). The work is synthetic (the handlers just
@@ -23,18 +23,18 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/janearc/blm/citizen"
-	"github.com/janearc/blm/emit"
-	bentov1 "github.com/janearc/blm/gen/go/bento/v1"
-	bentoproto "github.com/janearc/blm/proto/bento/v1"
-	observabilityproto "github.com/janearc/blm/proto/observability/v1"
-	"github.com/janearc/blm/watcher"
+	"github.com/janearc/big-little-mesh/emit"
+	"github.com/janearc/big-little-mesh/frood"
+	bentov1 "github.com/janearc/big-little-mesh/gen/go/bento/v1"
+	bentoproto "github.com/janearc/big-little-mesh/proto/bento/v1"
+	observabilityproto "github.com/janearc/big-little-mesh/proto/observability/v1"
+	"github.com/janearc/big-little-mesh/watcher"
 )
 
 const (
 	// serviceID is the dummy's identity on the bus -- deliberately not a real service
-	// name, so its telemetry never masquerades as a production citizen's.
-	serviceID = "good-citizen-dummy"
+	// name, so its telemetry never masquerades as a production frood's.
+	serviceID = "frood-dummy"
 
 	topicBentoEvents = "bento.events"
 	subjectBento     = "bento.v1.BentoLifecycleEvent"
@@ -59,7 +59,7 @@ func newID() string {
 
 // handlers binds synthetic behavior to the bento FSM: each state transitions to the
 // next, which is enough to drive a bento through the lifecycle and exercise the
-// generated dispatch + emit. A real citizen does work here; the dummy proves the path.
+// generated dispatch + emit. A real frood does work here; the dummy proves the path.
 type handlers struct{ log *slog.Logger }
 
 func (h handlers) OnNoticed(_ context.Context, b *bentov1.Bento) (bentov1.BentoState, error) {
@@ -127,7 +127,7 @@ func drive(ctx context.Context, h handlers, e busEmitter, log *slog.Logger, name
 func main() {
 	log := slog.New(slog.NewJSONHandler(os.Stderr, nil))
 
-	inbox := getenv("DUMMY_INBOX", "/tmp/good-citizen-dummy/inbox")
+	inbox := getenv("DUMMY_INBOX", "/tmp/frood-dummy/inbox")
 	brokers := strings.Split(getenv("KAFKA_BROKERS", "kafka:9092"), ",")
 	srURL := getenv("SCHEMA_REGISTRY_URL", "http://schema-registry:8081")
 
@@ -142,7 +142,7 @@ func main() {
 		pub = p
 		defer pub.Close()
 		log.Info("kafka emission ready")
-		go citizen.Heartbeat(ctx, pub, serviceID, observabilityproto.Schema, 15*time.Second, log)
+		go frood.Heartbeat(ctx, pub, serviceID, observabilityproto.Schema, 15*time.Second, log)
 	}
 
 	h := handlers{log: log}
@@ -157,7 +157,7 @@ func main() {
 	}, log)
 	go w.Run(ctx)
 
-	log.Info("good-citizen dummy running", "service", serviceID, "inbox", inbox)
+	log.Info("frood dummy running", "service", serviceID, "inbox", inbox)
 	<-ctx.Done()
-	log.Info("good-citizen dummy stopped")
+	log.Info("frood dummy stopped")
 }

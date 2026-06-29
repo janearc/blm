@@ -1,4 +1,4 @@
-# good_citizen.watcher -- the generic intake loop, now a thin consumer of a Provider.
+# frood.watcher -- the generic intake loop, now a thin consumer of a Provider.
 #
 # the watcher no longer touches the filesystem: a Provider owns intake (provider.read),
 # the persistent dedup, and the partial-write guard. scan_once is one pass and is testable
@@ -24,14 +24,14 @@ def scan_once(provider, handler):
             handler(source)
             handled.append(source)
         except Exception as e:  # noqa: BLE001 - one bad source must not stop the loop
-            log.error("good_citizen.watcher: failed on %s: %s", source.name, e)
+            log.error("frood.watcher: failed on %s: %s", source.name, e)
     return handled
 
 
 def watch(provider, handler, interval=5.0):
     # poll the provider forever, handling new sources each pass. Dedup is the provider's
     # job and is durable, so the loop carries no in-memory "seen" set to lose on restart.
-    log.info("good_citizen.watcher: watching via %s", type(provider).__name__)
+    log.info("frood.watcher: watching via %s", type(provider).__name__)
     while True:
         scan_once(provider, handler)
         time.sleep(interval)

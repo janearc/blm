@@ -1,14 +1,14 @@
 # =============================================================================
-# good-citizen-dummy -- the reference citizen, run as a standing liveness canary
+# frood-dummy -- the reference frood, run as a standing liveness canary
 # =============================================================================
-# blm #42 (deploy); the dummy spec is epic #16 P4.
+# Big Little Mesh #42 (deploy); the dummy spec is epic #16 P4.
 #
-# The dummy is good-citizen's executable spec and release gate: it drives a
+# The dummy is frood's executable spec and release gate: it drives a
 # synthetic bento through the generated FSM and emits the full lifecycle on the
 # bus. Here it runs as a STANDING canary rather than a one-shot CI gate:
 #
-#   - it heartbeats GREEN continuously ("aggressively healthy" -- citizen.Heartbeat
-#     is hardcoded HEALTH_STATE_GREEN), so the mesh always has a known-good citizen
+#   - it heartbeats GREEN continuously ("aggressively healthy" -- frood.Heartbeat
+#     is hardcoded HEALTH_STATE_GREEN), so the mesh always has a known-frood
 #     on observability.events to check liveness/telemetry against;
 #   - its inbox starts EMPTY, so it drives no synthetic bentos and stays off
 #     bento.events -- a standing canary must not crowd the bus. Someone exercising
@@ -21,21 +21,21 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: good-citizen-dummy
+  name: frood-dummy
   namespace: fleet
   labels:
-    app.kubernetes.io/name: good-citizen-dummy
+    app.kubernetes.io/name: frood-dummy
     app.kubernetes.io/part-of: fleet
     app.kubernetes.io/component: dummy
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app.kubernetes.io/name: good-citizen-dummy
+      app.kubernetes.io/name: frood-dummy
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: good-citizen-dummy
+        app.kubernetes.io/name: frood-dummy
         app.kubernetes.io/part-of: fleet
         app.kubernetes.io/component: dummy
     spec:
@@ -44,14 +44,14 @@ spec:
       securityContext:
         fsGroup: 65532
       containers:
-        - name: good-citizen-dummy
+        - name: frood-dummy
           # Locally-built image, pinned to an explicit tag (never :latest): build
           # and import this exact tag into k3d so the kubelet uses the cached
           # image and never reaches a registry:
-          #   docker build -t good-citizen-dummy:v1 -f cmd/dummy/Dockerfile .
-          #   k3d image import good-citizen-dummy:v1 -c fleet
+          #   docker build -t frood-dummy:v1 -f cmd/dummy/Dockerfile .
+          #   k3d image import frood-dummy:v1 -c fleet
           # Bump the tag deliberately when cmd/dummy changes; do not float it.
-          image: good-citizen-dummy:v1
+          image: frood-dummy:v1
           # Image is local-only; never let the kubelet attempt a registry pull --
           # it would fail and waste the throttled link.
           imagePullPolicy: IfNotPresent
@@ -68,10 +68,10 @@ spec:
             # is writable. Empty inbox => no synthetic bentos => quiet bus, until
             # someone rolls the dummy by dropping a file here.
             - name: DUMMY_INBOX
-              value: /var/lib/good-citizen-dummy/inbox
+              value: /var/lib/frood-dummy/inbox
           volumeMounts:
             - name: inbox
-              mountPath: /var/lib/good-citizen-dummy/inbox
+              mountPath: /var/lib/frood-dummy/inbox
           resources:
             # Modest -- a 5s poll loop, a Kafka client, and a 15s heartbeat on a
             # laptop cluster.

@@ -1,4 +1,4 @@
-// Command sidecar is the good-citizen emit sidecar: the container companion to a
+// Command sidecar is the frood emit sidecar: the container companion to a
 // bare-metal Python pipeline (which needs Metal/MLX and so lives off the docker
 // network). The pipeline POSTs bento lifecycle events here; the sidecar owns the
 // protobuf + Schema-Registry + Kafka wire, so Python never touches Kafka. Modeled on
@@ -24,11 +24,11 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/janearc/blm/emit"
-	bentov1 "github.com/janearc/blm/gen/go/bento/v1"
-	observabilityv1 "github.com/janearc/blm/gen/go/observability/v1"
-	bentoproto "github.com/janearc/blm/proto/bento/v1"
-	observabilityproto "github.com/janearc/blm/proto/observability/v1"
+	"github.com/janearc/big-little-mesh/emit"
+	bentov1 "github.com/janearc/big-little-mesh/gen/go/bento/v1"
+	observabilityv1 "github.com/janearc/big-little-mesh/gen/go/observability/v1"
+	bentoproto "github.com/janearc/big-little-mesh/proto/bento/v1"
+	observabilityproto "github.com/janearc/big-little-mesh/proto/observability/v1"
 )
 
 const (
@@ -37,7 +37,7 @@ const (
 	topicBentoEvents = "bento.events"
 	subjectBento     = "bento.v1.BentoLifecycleEvent"
 
-	// the observability topic obs-svc consumes; the sidecar is the citizen's only
+	// the observability topic obs-svc consumes; the sidecar is the frood's only
 	// producer, so the heartbeat is the one thing touching kafka on its behalf.
 	topicObservability = "observability.events"
 	subjectHeartbeat   = "observability.v1.ServiceHealthHeartbeat"
@@ -81,7 +81,7 @@ func emitIntake(ctx context.Context, pub *emit.Publisher) http.HandlerFunc {
 
 // startHeartbeat polls the pipeline's /health and emits a ServiceHealthHeartbeat on a
 // ticker. Best-effort: a poll or publish failure is logged, never fatal. The heartbeat
-// is the observability signal obs-svc consumes -- the citizen pipeline never emits it
+// is the observability signal obs-svc consumes -- the frood pipeline never emits it
 // itself; the sidecar does, reflecting the poll (GREEN when /health is ok, else RED).
 func startHeartbeat(ctx context.Context, pub *emit.Publisher, serviceName, healthURL string) {
 	ticker := time.NewTicker(15 * time.Second)
@@ -114,7 +114,7 @@ func startHeartbeat(ctx context.Context, pub *emit.Publisher, serviceName, healt
 }
 
 func main() {
-	log.Info("starting good-citizen emit sidecar")
+	log.Info("starting frood emit sidecar")
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -155,7 +155,7 @@ func main() {
 	mux.HandleFunc("/emit", emitIntake(ctx, publisher))
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"status":"ok","service":"good-citizen-sidecar"}`))
+		_, _ = w.Write([]byte(`{"status":"ok","service":"frood-sidecar"}`))
 	})
 
 	server := &http.Server{Addr: getenv("SIDECAR_ADDR", ":9090"), Handler: mux}

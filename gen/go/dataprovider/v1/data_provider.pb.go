@@ -14,7 +14,7 @@
 package dataproviderv1
 
 import (
-	v1 "github.com/janearc/blm/gen/go/auth/v1"
+	v1 "github.com/janearc/big-little-mesh/gen/go/auth/v1"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	structpb "google.golang.org/protobuf/types/known/structpb"
@@ -540,7 +540,7 @@ type QueryRequest struct {
 	Index      string                     `protobuf:"bytes,2,opt,name=index,proto3" json:"index,omitempty"`
 	Predicates map[string]*structpb.Value `protobuf:"bytes,3,rep,name=predicates,proto3" json:"predicates,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	// shard_hint is provisional: an implementation-specific routing hint, not a contract
-	// guarantee, and it may move to a transport header later. blm is a nodes == 1 mesh: we
+	// guarantee, and it may move to a transport header later. Big Little Mesh is a nodes == 1 mesh: we
 	// ignore sharding entirely and keep this field to pretend we care -- present for
 	// Schemaless fidelity, a no-op for us.
 	ShardHint string `protobuf:"bytes,4,opt,name=shard_hint,json=shardHint,proto3" json:"shard_hint,omitempty"`
@@ -740,8 +740,8 @@ const file_dataprovider_v1_data_provider_proto_rawDesc = "" +
 	"\x03Get\x12\x1b.dataprovider.v1.GetRequest\x1a\x1c.dataprovider.v1.GetResponse\x12R\n" +
 	"\tGetLatest\x12!.dataprovider.v1.GetLatestRequest\x1a\".dataprovider.v1.GetLatestResponse\x12@\n" +
 	"\x03Put\x12\x1b.dataprovider.v1.PutRequest\x1a\x1c.dataprovider.v1.PutResponse\x12F\n" +
-	"\x05Query\x12\x1d.dataprovider.v1.QueryRequest\x1a\x1e.dataprovider.v1.QueryResponseB\xc3\x01\n" +
-	"\x13com.dataprovider.v1B\x11DataProviderProtoP\x01Z<github.com/janearc/blm/gen/go/dataprovider/v1;dataproviderv1\xa2\x02\x03DXX\xaa\x02\x0fDataprovider.V1\xca\x02\x0fDataprovider\\V1\xe2\x02\x1bDataprovider\\V1\\GPBMetadata\xea\x02\x10Dataprovider::V1b\x06proto3"
+	"\x05Query\x12\x1d.dataprovider.v1.QueryRequest\x1a\x1e.dataprovider.v1.QueryResponseB\xcf\x01\n" +
+	"\x13com.dataprovider.v1B\x11DataProviderProtoP\x01ZHgithub.com/janearc/big-little-mesh/gen/go/dataprovider/v1;dataproviderv1\xa2\x02\x03DXX\xaa\x02\x0fDataprovider.V1\xca\x02\x0fDataprovider\\V1\xe2\x02\x1bDataprovider\\V1\\GPBMetadata\xea\x02\x10Dataprovider::V1b\x06proto3"
 
 var (
 	file_dataprovider_v1_data_provider_proto_rawDescOnce sync.Once

@@ -6,14 +6,14 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
-	observabilityv1 "github.com/janearc/blm/gen/go/observability/v1"
+	observabilityv1 "github.com/janearc/big-little-mesh/gen/go/observability/v1"
 )
 
 // TestEncode_FirstMessageIndex pins the index-0 case: ServiceHealthHeartbeat is
 // the first message in observability.proto, so its message-index is the single
 // 0x00 optimization byte.
 func TestEncode_FirstMessageIndex(t *testing.T) {
-	hb := &observabilityv1.ServiceHealthHeartbeat{ServiceName: "good-citizen"}
+	hb := &observabilityv1.ServiceHealthHeartbeat{ServiceName: "frood"}
 	frame, err := encode(7, hb)
 	if err != nil {
 		t.Fatalf("encode: %v", err)
@@ -31,7 +31,7 @@ func TestEncode_FirstMessageIndex(t *testing.T) {
 	if err := proto.Unmarshal(frame[6:], &got); err != nil {
 		t.Fatalf("payload round-trip: %v", err)
 	}
-	if got.GetServiceName() != "good-citizen" {
+	if got.GetServiceName() != "frood" {
 		t.Errorf("round-trip mismatch: %q", got.GetServiceName())
 	}
 }

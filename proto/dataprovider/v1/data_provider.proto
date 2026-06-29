@@ -104,7 +104,7 @@ message QueryRequest {
   string index = 2;
   map<string, google.protobuf.Value> predicates = 3;
   // shard_hint is provisional: an implementation-specific routing hint, not a contract
-  // guarantee, and it may move to a transport header later. blm is a nodes == 1 mesh: we
+  // guarantee, and it may move to a transport header later. Big Little Mesh is a nodes == 1 mesh: we
   // ignore sharding entirely and keep this field to pretend we care -- present for
   // Schemaless fidelity, a no-op for us.
   string shard_hint = 4;

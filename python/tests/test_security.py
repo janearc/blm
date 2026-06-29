@@ -6,7 +6,7 @@ from pathlib import Path
 from birblib import service
 from birblib.bento import BirbBento
 from birblib.handlers import BirbHandlers, _scrub
-from good_citizen.provider import FilesystemProvider
+from frood.provider import FilesystemProvider
 
 
 # --- L2.1: bento_id shape guard ----------------------------------------------

@@ -1,6 +1,6 @@
 // Package observabilityproto exposes the observability.v1 .proto source text for
-// Confluent Schema-Registry registration. The schema travels with good-citizen
-// (blm is its canonical home), so the registered wire schema and the generated
+// Confluent Schema-Registry registration. The schema travels with frood
+// (Big Little Mesh is its canonical home), so the registered wire schema and the generated
 // Go bindings come from one place rather than a vendored copy.
 package observabilityproto
 

@@ -1,7 +1,7 @@
 # Pipelines: bento, banchan, and the pipeline-pipeline
 
-blm describes how pipelines are built. It is a library and a set of protobuf
-contracts, not a daemon -- there is no `blmd`. A pipeline built on blm is a project
+Big Little Mesh describes how pipelines are built. It is a library and a set of protobuf
+contracts, not a daemon -- there is no `big-little-meshd`. A pipeline built on Big Little Mesh is a project
 that the orchestrator, [delightd](https://github.com/janearc/delightd), registers and
 that the mesh composes.
 
@@ -43,7 +43,7 @@ carries a few shared states, not one per stage, and it forbids emitting an inter
 step to the mesh. If a handler tries to put an internal `COOK` step onto the bus for
 other pipelines to see, it fails -- either the message will not marshal, or it lands on
 the bus with no home and is silently dropped, and that failure can be hard to trace.
-This is central to how blm works as a mesh: the shared vocabulary is small on purpose.
+This is central to how Big Little Mesh works as a mesh: the shared vocabulary is small on purpose.
 
 A worked example -- magpie ingesting audio:
 
@@ -70,7 +70,7 @@ not a shell script), and separately bounded. Its specification is not yet define
 
 ## Composition and destinations
 
-blm is a pipeline-of-pipelines. The output of one pipeline can become the input of
+Big Little Mesh is a pipeline-of-pipelines. The output of one pipeline can become the input of
 another: an audio note transcribed and then turned into a video; a document turned
 into a podcast.
 
@@ -111,9 +111,9 @@ Three nested terms, widest first:
 The last distinction matters because it is easy to assume "pipeline" and "birb" are synonyms.
 They are not. **paling — the voice fine-tuner — is a pipeline but not a birb.** It predates the
 archetype, carries its own bento notion, and is a different animal: an eel, not a bird. It is a
-first-class citizen of the mesh (it speaks the bus, it has bentos) without subclassing
-`birblib`. `birblib` is one *way* to build a pipeline, not the definition of one; `good_citizen`
-— the bus/mesh citizen layer — is what every pipeline shares, birb or eel.
+first-class frood of the mesh (it speaks the bus, it has bentos) without subclassing
+`birblib`. `birblib` is one *way* to build a pipeline, not the definition of one; `frood`
+— the bus/mesh frood layer — is what every pipeline shares, birb or eel.
 
 ## Registration
 
@@ -130,7 +130,7 @@ What belongs here is the pipeline's side:
 - A pipeline knows its own acceptable bentos and decides for itself what it can handle.
   The registry does not hold that, and there is no route-time shape check -- the
   receiver looks at what arrives and accepts or declines.
-- Bento definitions are intended to live in blm (a `bento-definitions` area) so that a
+- Bento definitions are intended to live in Big Little Mesh (a `bento-definitions` area) so that a
   pipeline vendors a shared definition rather than re-declaring it -- though a pipeline
   that wants to declare its own is free to. (Not built yet.)
 
@@ -160,5 +160,5 @@ registration, composition, being discovered -- is what depends on delightd.
 "Runs locally without delightd" is an invariant: the core **cannot** depend on the
 orchestrator; only the mesh features may. Where a mesh dependency is absent a pipeline
 degrades rather than fails -- it does the part it can and keeps the raw result (the
-`PARTIAL` state). The price of admission to the *mesh* -- composition, the registry --
+`PARTIAL` state). The price of joining the *mesh* -- composition, the registry --
 is infrastructure; the price of running a single pipeline is not.

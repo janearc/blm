@@ -1,4 +1,4 @@
-# tests for good_citizen.provider.FilesystemProvider: terminal-recorded dedup that survives
+# tests for frood.provider.FilesystemProvider: terminal-recorded dedup that survives
 # a restart and re-delivers on a crash, the partial-write guard, the hardened atomic write,
 # the state-file-out-of-the-inbox security posture, and notify.
 #
@@ -9,7 +9,7 @@ import os
 import time
 from pathlib import Path
 
-from good_citizen.provider import FilesystemProvider, atomic_write
+from frood.provider import FilesystemProvider, atomic_write
 
 
 def _drop(inbox: Path, name: str, data: bytes = b"payload") -> Path:
@@ -108,7 +108,7 @@ def test_poison_state_in_inbox_does_not_suppress_intake(tmp_path):
     # an attacker drops a file named like the old in-inbox state. Because the real state is
     # elsewhere (and the dotfile is skipped by read), it does not suppress a real source.
     inbox = tmp_path / "inbox"
-    _drop(inbox, ".good_citizen_delivered.json", b'{"poison": 1}')
+    _drop(inbox, ".frood_delivered.json", b'{"poison": 1}')
     _drop(inbox, "real.txt")
     provider = _provider(tmp_path)
     assert {s.name for s in provider.read()} == {"real.txt"}

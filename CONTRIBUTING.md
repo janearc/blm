@@ -1,8 +1,8 @@
-# Contributing to blm
+# Contributing to Big Little Mesh
 
 ## Version discipline (the 0.4.x convergence line)
 
-blm is converging toward a stable freeze. During convergence:
+Big Little Mesh is converging toward a stable freeze. During convergence:
 
 - **Version numbers are finite — do not burn one per fix.** The `0.4.x` line is the
   convergence line. Batch related work; prefer a force-push over minting a new patch number.
@@ -11,11 +11,11 @@ blm is converging toward a stable freeze. During convergence:
   preserving a tidy linear history. This is a property of the convergence phase and ends at
   the freeze.
 - **`0.5` is the freeze.** At `0.5` everything is tagged together — the contracts,
-  `good_citizen`, `birblib`, and the birbs — as one coherent cut, and we ship a "here's blm"
+  `frood`, `birblib`, and the birbs — as one coherent cut, and we ship a "here's Big Little Mesh"
   write-up against that tag. `0.5` is not a feature target reached by accumulating minor
   bumps; it is the moment we decide the core is done and stop moving it.
 
-A practical consequence: a stacked review (e.g. a `good_citizen` change and the `birblib`
+A practical consequence: a stacked review (e.g. a `frood` change and the `birblib`
 change that consumes it) lands as a tight set of PRs, not a version bump each.
 
 ## The stability / seam boundary
@@ -58,9 +58,9 @@ pass before a push.
 
 ## Trust — who can participate (vouch)
 
-blm uses Mitchell Hashimoto's [vouch](https://github.com/mitchellh/vouch) trust protocol.
+Big Little Mesh uses Mitchell Hashimoto's [vouch](https://github.com/mitchellh/vouch) trust protocol.
 `VOUCHED.td` at the repository root lists the handles trusted to participate here; a
-denounced handle (leading `-`) is blocked. blm is public, and stating who is trusted plainly
+denounced handle (leading `-`) is blocked. Big Little Mesh is public, and stating who is trusted plainly
 — rather than leaving it implicit — is part of the point.
 
 Being vouched grants **participation, not write access**: vouched handles are trusted to open

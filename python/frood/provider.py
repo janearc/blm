@@ -1,4 +1,4 @@
-# good_citizen.provider -- the one I/O seam every pipeline routes through.
+# frood.provider -- the one I/O seam every pipeline routes through.
 #
 # ALL inbox intake (read), output emission (write), and result notification (notify) go
 # through a Provider, so swapping the filesystem for S3 / Google Drive / rsync / a tunnel
@@ -81,7 +81,7 @@ class FilesystemProvider:
     # in-flight set stops the same process from handing a source out twice while it cooks; a
     # RESTART starts with an empty in-flight set, so anything that was mid-cook at the crash
     # is re-delivered (at-least-once). The delivery log lives OUTSIDE the inbox (default
-    # under ~/var/good_citizen) so a dropper cannot pre-seed it to suppress intake.
+    # under ~/var/frood) so a dropper cannot pre-seed it to suppress intake.
 
     def __init__(
         self,
@@ -105,13 +105,13 @@ class FilesystemProvider:
         # drop surface (a synced folder, a tunnel collector), and a dropper that could
         # pre-seed the state there would silently suppress intake (or poison json.loads). A
         # caller SHOULD pass an explicit state_path under its own ~/var/<service>; absent
-        # that, default under ~/var/good_citizen, keyed by the inbox path.
+        # that, default under ~/var/frood, keyed by the inbox path.
         if state_path is not None:
             return Path(state_path)
         if self.inbox is None:
             return None
         digest = hashlib.sha256(str(self.inbox.resolve()).encode()).hexdigest()[:16]
-        return Path.home() / "var" / "good_citizen" / f"delivered-{digest}.json"
+        return Path.home() / "var" / "frood" / f"delivered-{digest}.json"
 
     # --- read: intake; dedup is recorded on mark_done, not here ----------------
     def read(self) -> Iterable[Source]:
@@ -168,7 +168,7 @@ class FilesystemProvider:
                 return json.loads(self.state_path.read_text())
             except Exception as e:  # noqa: BLE001 - a corrupt state file must not wedge intake
                 log.warning(
-                    "good_citizen.provider: unreadable delivery state %s (%s); starting empty",
+                    "frood.provider: unreadable delivery state %s (%s); starting empty",
                     self.state_path, e,
                 )
         return {}
@@ -188,7 +188,7 @@ class FilesystemProvider:
         # an atomic JSON record a phone-synced folder or another watcher can see. a non-fs
         # provider (S3/collector/tunnel) POSTs instead; the caller does not change.
         ident = record.get("bento_id") or record.get("id") or str(time.time())
-        log.info("good_citizen.provider: notify %s ok=%s state=%s",
+        log.info("frood.provider: notify %s ok=%s state=%s",
                  ident, record.get("ok"), record.get("state"))
         if self.notify_dir is not None:
             atomic_write(self.notify_dir / f"{ident}.json", json.dumps(record, indent=2))

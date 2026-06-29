@@ -1,7 +1,7 @@
-// Package consume is good-citizen's inbound Kafka boundary, the mirror of emit.
+// Package consume is frood's inbound Kafka boundary, the mirror of emit.
 // It polls a topic in a consumer group, strips the Confluent Schema-Registry
 // protobuf wire framing, and hands the raw payload to a Handler that unmarshals
-// it into the caller's own message type -- good-citizen owns the wire format,
+// it into the caller's own message type -- frood owns the wire format,
 // the caller owns the domain type.
 //
 // Availability mirrors emit: a down broker is logged and retried with backoff,
