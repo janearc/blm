@@ -1,9 +1,13 @@
 [project]
 # the 0.4.x line is the convergence line; 0.5 is reserved for the eventual stable tag.
 # adding birblib is a 0.4.x increment, not a minor bump.
-name = "big-little-mesh"
+name = "big-little-mesh-frood"
 version = "0.4.1"
-description = "frood + birblib: the Python frood surface for Big Little Mesh -- the generated bento/banchan contracts and FSM harness, plus the birb archetype layer (BirbBento/BirbHandlers/dispatch/...) on top of it."
+description = """\
+frood + birblib: the Python frood surface for Big Little Mesh -- the generated \
+bento/banchan contracts and FSM harness, plus the birb archetype layer \
+(BirbBento/BirbHandlers/dispatch/...) on top of it.\
+"""
 requires-python = ">=3.12"
 dependencies = [
     # the generated protobuf message classes (bento_pb2, model_pb2, ...).
@@ -13,7 +17,7 @@ dependencies = [
 ]
 
 # birblib.service's HTTP surface is opt-in: a birb that only wants the bento/handlers/
-# daemon never pays for fastapi/uvicorn. install with `big-little-mesh[service]`.
+# daemon never pays for fastapi/uvicorn. install with `big-little-mesh-frood[service]`.
 [project.optional-dependencies]
 service = [
     "fastapi",

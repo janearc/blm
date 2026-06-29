@@ -75,7 +75,7 @@ flowchart TB
 
 ## the part early uber didn't have
 
-here's where the big little mesh stops being a 2016 uber tribute act. early uber gave you stateless services, everything-is-a-deployment, contracts on the wire, a log of everything — a particular way of seeing the world where nothing is precious and everything is reproducible. (if "everything is a kube deployment" is a hermeneutic, the big little mesh is the same one.) it's built on exactly that worldview. but it adds the thing 2016 had no use for: it's agent-first.
+here's where the big little mesh stops being a 2016 uber tribute act. early uber gave you stateless services, everything-is-a-deployment, contracts on the wire, a log of everything — a particular way of seeing the world where nothing is precious and everything is reproducible. (if "everything is a kube deployment" is a hermeneutic, this is the same one — it's built on exactly that worldview.) but it adds the thing 2016 had no use for: it's agent-first.
 
 what that means in practice: every capability in the mesh emits json by default, ships a little cli wrapper, and registers itself as a skill. delightd aggregates those skills and serves them over mcp. so an llm agent can operate the whole mesh the same way you can — deploy a service, ask what's dirty, read the logs, kick off a training job — because everything is already legible to it: contracts, json, discoverable, no hidden state.
 

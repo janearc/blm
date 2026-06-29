@@ -1,5 +1,5 @@
-// Package frood is the high-level frood surface a service wires up: the
-// heartbeat every frood emits, and (as frood grows) the watch/secrets/
+// Package frood is the high-level surface a service wires up to become a frood of
+// the mesh: the heartbeat it emits, and (as the package grows) the watch/secrets/
 // scheduler glue. It sits on top of the emit package so a service gets fleet
 // observability for free by calling one function.
 package frood

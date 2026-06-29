@@ -3,7 +3,7 @@
 # vs audio vs video differ) stays the birb's own; the job API, health, and artifact
 # serving are the lib's.
 #
-# fastapi/uvicorn are an OPTIONAL extra (`big-little-mesh[service]`): they are imported
+# fastapi/uvicorn are an OPTIONAL extra (`big-little-mesh-frood[service]`): they are imported
 # lazily inside the HTTP functions, so a birb that only wants the bento/handlers/daemon
 # never pays for them. the daemon half rides on frood.watcher (stdlib) and needs no
 # extra.
