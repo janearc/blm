@@ -34,11 +34,14 @@ or a blocking read) and the kernel does not return until there is something to d
 process is descheduled -- it consumes no cycles -- until a connection arrives, at which
 point it is woken, handles the request, and blocks again.
 
-This is the difference between *waiting* and *busy-waiting*. A loop that checks "is there
-work yet?" and sleeps a little and checks again is a busy-wait; it burns a core to ask a
-question whose answer is almost always no. A blocking syscall asks the kernel to wake it
-exactly when the answer changes. A listener waits; it does not busy-wait. The watcher's
-inbox watch is the same idea from the other side -- it blocks on the bus, not a timer.
+This is where the two archetypes genuinely differ -- they wake differently, and that is the
+point. The listener is **event-driven**: it blocks on `accept` and parks at ~0% idle CPU,
+woken only when a request actually arrives. The watcher **polls**: it wakes on a bounded
+interval, scans its inbox, handles whatever is new, and sleeps again. Polling is not parked,
+but it is not a busy-wait either -- the interval keeps it from free-running, so the cost is a
+cheap, bounded tick rather than a core burned asking "is there work yet?" whose answer is
+almost always no. (A *bus*-consuming watcher would block on the consumer poll, closer to the
+listener's pattern; the default filesystem-inbox watcher does not -- it sleeps and scans.)
 
 ## Semistate: the data is durable, the request is not
 
@@ -63,11 +66,11 @@ stateless from the start.
 There is one operational rule that both archetypes obey, and it is the rule that keeps an
 always-on service from becoming an always-burning one:
 
-> Every loop blocks on something, and every reconnect or retry path backs off, bounded.
+> No loop free-runs: it blocks on an event, waits a bounded interval, or backs off a retry.
 
-The first half is the anti-busy-wait rule above: a service's main loop blocks on its
-socket, never on a timer it checks in a tight cycle. The second half is the failure case
-that bites in practice. A listener depends on things that can be down -- its store, the
+The first half is the wake rule above -- a listener blocks on its socket, a watcher sleeps a
+bounded interval; neither spins in a tight `is-there-work-yet?` cycle. The second half is
+the failure case that bites in practice. A listener depends on things that can be down -- its store, the
 bus, a discovery lookup. The naive reconnect is a `while not connected: connect()` loop,
 and when the dependency is *durably* down that loop pegs a core doing nothing, on a
 machine that is also the operator's laptop. So every reconnect and retry path uses bounded
