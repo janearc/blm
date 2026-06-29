@@ -42,7 +42,7 @@ swift test
   `AssetInventory`), and a **Personal Voice** has to be enrolled in System Settings to
   exist at all. Expect a download or two.
 
-## Toolchain, formatting & CI
+## Toolchain, formatting & local checks
 
 - **Toolchain:** Swift 6.2.x (the Xcode that ships the macOS 26 SDK).
 - **Formatting** is `swift format` against `.swift-format` (4-space, 100-col) — the
@@ -51,7 +51,13 @@ swift test
   swift format lint --strict --recursive --configuration .swift-format apple-silicon/Sources apple-silicon/Tests
   swift format --in-place --recursive --configuration .swift-format apple-silicon/Sources apple-silicon/Tests   # fix
   ```
-- **CI** (`.github/workflows/swift.yml`): format-lint + `swift build` + `swift test`, on a
-  **self-hosted macOS runner** — it needs the ANE and the macOS 26 SDK, so the Linux and
-  hosted runners can't. Label it `self-hosted, macOS, ARM64`; it's path-filtered to
-  `apple-silicon/**`, so it stays out of the Go/Python lanes.
+- **No GitHub Actions lane — verified locally instead.** This component needs the ANE and
+  the macOS 26 SDK, so it cannot run on GitHub's hosted runners, and we deliberately do
+  **not** register a self-hosted runner: big-little-mesh is public, and a self-hosted runner
+  would let a fork PR run code on the host. Run the gate locally before pushing changes under
+  `apple-silicon/` or to `Package.swift`:
+  ```
+  ./apple-silicon/check.sh   # format-lint + swift build + swift test
+  ```
+  The Go, Python, and gen-drift lanes still run in CI on hosted Linux runners; only Swift is
+  local.
