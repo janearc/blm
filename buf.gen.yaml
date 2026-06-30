@@ -46,3 +46,11 @@ plugins:
     out: gen/swift
     opt:
       - paths=source_relative
+  # protoc-gen-rust-serde (local, in cmd/) emits a plain serde crate -- no prost, no
+  # protobuf runtime -- for the packages a Rust consumer speaks, so Rust speaks protojson
+  # the same way the Swift target does (the wire is protojson, not binary protobuf). Scoped
+  # to observability.v1 for now (the floater); other packages are skipped. It derives the
+  # module paths from the proto package, so it takes no paths= opt. Built via
+  # `go install ./cmd/protoc-gen-rust-serde`. The whole gen/rust crate is generated.
+  - local: protoc-gen-rust-serde
+    out: gen/rust

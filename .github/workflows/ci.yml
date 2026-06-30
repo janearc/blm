@@ -73,6 +73,7 @@ jobs:
           go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.11
           go install ./cmd/protoc-gen-fsm
           go install ./cmd/protoc-gen-swift-codable
+          go install ./cmd/protoc-gen-rust-serde
           echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
 
       - name: Regenerate
@@ -118,3 +119,25 @@ jobs:
       - name: Test (pytest)
         working-directory: python
         run: uv run pytest
+
+  rust:
+    # The generated gen/rust crate's protojson conformance. cargo test runs the
+    # plugin-emitted #[cfg(test)] module: enum vocabulary + tolerant decode of an unknown
+    # value, lowerCamel keys, Option fields omitted-when-None / present-when-Some, and
+    # tolerant decode of an all-absent payload. This locks the wire shape so it cannot
+    # regress unnoticed; the gen-drift job (above) separately proves the crate is in sync
+    # with the contracts. ubuntu-latest ships a stable Rust toolchain.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Select the toolchain on purpose, like every sibling job pins its own (setup-go,
+      # setup-python, buf-setup) rather than drifting with the runner's preinstalled Rust.
+      # The crate is edition 2021 (min Rust 1.56) with no C deps, so stable suffices; pin an
+      # exact version here if this should track the gen-drift job's exact-pin discipline.
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: cargo test (generated crate conformance)
+        working-directory: gen/rust
+        run: cargo test
