@@ -95,11 +95,13 @@ func crateLibName() string { return strings.ReplaceAll(crateName, "-", "_") }
 // is skipped, exactly as protoc-gen-swift-codable filters to the Swift packages.
 var rustPackages = parsePackages(defaultPackages)
 
-// parsePackages splits the comma-separated `packages` opt into the allowlist set, trimming
-// surrounding whitespace and dropping empty entries.
-func parsePackages(csv string) map[string]bool {
+// parsePackages splits the `packages` opt into the allowlist set, trimming surrounding
+// whitespace and dropping empty entries. It accepts BOTH ',' and ';' as separators: the in-Go
+// default uses commas, but buf splits a plugin opt string on commas before the plugin sees it,
+// so multiple packages passed via `buf opt:` MUST be ';'-separated (e.g. packages=a.v1;b.v1).
+func parsePackages(spec string) map[string]bool {
 	out := map[string]bool{}
-	for _, p := range strings.Split(csv, ",") {
+	for _, p := range strings.FieldsFunc(spec, func(r rune) bool { return r == ',' || r == ';' }) {
 		if p = strings.TrimSpace(p); p != "" {
 			out[p] = true
 		}
@@ -120,7 +122,7 @@ func main() {
 	crateNameOpt := flags.String("crate_name", defaultCrateName,
 		"Cargo package name for the generated crate (hyphens map to the underscore lib path)")
 	packagesOpt := flags.String("packages", defaultPackages,
-		"comma-separated proto package allowlist the Rust consumer speaks; others are skipped")
+		"proto package allowlist the Rust consumer speaks (others skipped); under buf opt separate multiple with ';' (buf splits ',')")
 	protogen.Options{ParamFunc: flags.Set}.Run(func(gen *protogen.Plugin) error {
 		gen.SupportedFeatures = uint64(1) // FEATURE_PROTO3_OPTIONAL
 		crateName = *crateNameOpt
@@ -137,7 +139,7 @@ func main() {
 			filesByPkg[pkg] = append(filesByPkg[pkg], f)
 		}
 		if len(filesByPkg) == 0 {
-			return nil // nothing in this module is in scope; emit nothing.
+			return nil // nothing in this per-directory invocation is in scope; emit nothing.
 		}
 
 		// Emit the per-package binding modules and collect their slash-form paths
