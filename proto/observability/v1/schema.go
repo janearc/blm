@@ -11,3 +11,14 @@ import _ "embed"
 //
 //go:embed observability.proto
 var Schema string
+
+// The RecordNameStrategy Schema-Registry subjects for the observability records, as the ONE
+// canonical home for these strings: a subject is the fully-qualified protobuf message name, and
+// both the producer (frood.Heartbeat) and the provisioner (admin.FleetSubjects) must name the
+// same one. Co-locating the constant with the schema it registers under means a proto message
+// rename changes the subject in a single place instead of silently desyncing bare literals
+// scattered across the producer, the provisioner, and their tests.
+const (
+	SubjectServiceHealthHeartbeat = "observability.v1.ServiceHealthHeartbeat"
+	SubjectTokenBurnEvent         = "observability.v1.TokenBurnEvent"
+)

@@ -14,14 +14,17 @@ import (
 
 	"github.com/janearc/big-little-mesh/emit"
 	observabilityv1 "github.com/janearc/big-little-mesh/gen/go/observability/v1"
+	observabilityproto "github.com/janearc/big-little-mesh/proto/observability/v1"
 )
 
 const (
 	// TopicObservability is the fleet heartbeat topic. Code is truth: this is
 	// observability.events, not observability.heartbeat.
 	TopicObservability = "observability.events"
-	// SubjectHeartbeat is the RecordNameStrategy subject for the heartbeat schema.
-	SubjectHeartbeat = "observability.v1.ServiceHealthHeartbeat"
+	// SubjectHeartbeat is the RecordNameStrategy subject for the heartbeat schema. It is the
+	// canonical observabilityproto constant -- the SAME one admin.FleetSubjects provisions under --
+	// so the subject the producer emits and the subject the provisioner registers cannot drift.
+	SubjectHeartbeat = observabilityproto.SubjectServiceHealthHeartbeat
 )
 
 // Heartbeat emits a ServiceHealthHeartbeat for serviceName every interval via
