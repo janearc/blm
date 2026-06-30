@@ -121,12 +121,14 @@ jobs:
         run: uv run pytest
 
   rust:
-    # The generated gen/rust crate's protojson conformance. cargo test runs the
-    # plugin-emitted #[cfg(test)] module: enum vocabulary + tolerant decode of an unknown
-    # value, lowerCamel keys, Option fields omitted-when-None / present-when-Some, and
-    # tolerant decode of an all-absent payload. This locks the wire shape so it cannot
-    # regress unnoticed; the gen-drift job (above) separately proves the crate is in sync
-    # with the contracts. ubuntu-latest ships a stable Rust toolchain.
+    # The gen/rust crate's protojson conformance. cargo test runs BOTH the plugin-emitted
+    # #[cfg(test)] module (enum vocabulary + tolerant decode of an unknown value, lowerCamel
+    # keys, Option fields omitted-when-None / present-when-Some, tolerant decode of an all-absent
+    # payload) AND the hand-written tests/golden_conformance.rs, which pins the wire against
+    # literal json a human wrote -- the self-referential generated tests cannot catch a plugin
+    # bug that corrupts the struct and its own assertion in lockstep. This locks the wire shape so
+    # it cannot regress unnoticed; the gen-drift job (above) separately proves the crate is in
+    # sync with the contracts. ubuntu-latest ships a stable Rust toolchain.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

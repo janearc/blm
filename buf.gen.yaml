@@ -54,8 +54,10 @@ plugins:
   # crate_name=delightd-contracts,packages=registry.v1. Passed explicitly here (the defaults)
   # to exercise the param path and self-document it; scoped to observability.v1 (the floater),
   # other packages skipped. It derives the module paths from the proto package, so it takes no
-  # paths= opt. Built via `go install ./cmd/protoc-gen-rust-serde`. The whole gen/rust crate
-  # is generated.
+  # paths= opt. Built via `go install ./cmd/protoc-gen-rust-serde`. The plugin generates the
+  # crate's Cargo.toml + src/ (all "DO NOT EDIT"); the one hand-written exception is
+  # gen/rust/tests/golden_conformance.rs, which buf never writes -- so it is drift-safe and the
+  # gen-drift gate keeps it that way.
   - local: protoc-gen-rust-serde
     out: gen/rust
     opt:
