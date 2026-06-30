@@ -14,8 +14,8 @@
 // what protoc-gen-swift-codable does for the Swift provider (plain Codable, no
 // SwiftProtobuf). prost would be a heavier dependency speaking the wrong wire.
 //
-// Scope (deliberately narrow, like the Swift plugin): it generates only the package the
-// Rust consumer needs today -- observability.v1 -- and only the field shapes that package
+// Scope (deliberately narrow, like the Swift plugin): it generates only the packages the
+// Rust consumer needs -- observability.v1 by default -- and only the field shapes that package
 // actually uses: string, uint32, proto3 `optional uint32`, enum, singular message, and the
 // google.protobuf.Timestamp well-known type (mapped to an RFC3339 String, protojson's
 // Timestamp form). It errors loudly on anything else -- repeated, map, other scalars,
@@ -28,9 +28,14 @@
 // gen/rust is fully reproducible from the contracts with nothing hand-edited; the drift gate
 // then guards the manifest too. The conformance tests run under `cargo test` (gated in CI):
 // they lock the enum vocabulary and tolerant decode, the lowerCamel keys, and the
-// presence/omission of Option fields, so the wire shape cannot regress unnoticed. To change
-// the crate name, version, edition, or the serde dependency, edit the constants below and
-// regenerate.
+// presence/omission of Option fields, so the wire shape cannot regress unnoticed.
+//
+// The crate name and the package allowlist are buf opt: params (`crate_name` and `packages`;
+// see this module's buf.gen.yaml and the constants below), defaulting to this repo's values.
+// That is how another repo runs this SAME plugin binary unforked: delightd generates its
+// registry.v1 crate with `crate_name=delightd-contracts,packages=registry.v1`, and the two
+// crates coexist in one consumer's dependency graph. Version, edition, and the serde
+// dependency stay constants -- edit them below and regenerate.
 //
 // protojson conventions baked in:
 //   - JSON keys are lowerCamelCase of the proto field name; the Rust field stays snake_case
@@ -51,6 +56,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"sort"
 	"strings"
@@ -60,26 +66,45 @@ import (
 )
 
 // Crate identity. The whole crate is generated, so these live here rather than in a
-// hand-written Cargo.toml. The Cargo package name is "big-little-mesh-contracts" (repo-scoped:
-// blm owns these packages, and another repo's generator -- delightd's registry.v1 -- emits a
-// differently-named crate, so the two can coexist in one consumer's dependency graph). Cargo
-// maps the hyphens to underscores for the lib path, so a consumer writes
+// hand-written Cargo.toml. The Cargo package name and the package allowlist are overridable
+// via the `crate_name` and `packages` buf opt: params (wired in main); these are the defaults,
+// keeping this repo's own generation unchanged when no opt is passed. defaultCrateName is
+// repo-scoped: blm owns these packages, and another repo's run of this same plugin --
+// delightd's registry.v1 -- passes crate_name=delightd-contracts to emit a differently-named
+// crate, so the two coexist in one consumer's dependency graph. Cargo maps the hyphens to
+// underscores for the lib path, so a consumer writes
 // `use big_little_mesh_contracts::observability::v1::ServiceHealthHeartbeat;`.
 const (
-	crateName        = "big-little-mesh-contracts"
+	defaultCrateName = "big-little-mesh-contracts"
+	defaultPackages  = "observability.v1"
 	crateVersion     = "0.1.0"
 	crateEdition     = "2021"
 	serdeVersion     = "1"
 	serdeJSONVersion = "1"
 )
 
+// crateName is the Cargo package name, set in main from the -crate_name opt (default
+// defaultCrateName).
+var crateName = defaultCrateName
+
 // crateLibName is the crate's library path: Cargo replaces hyphens with underscores.
 func crateLibName() string { return strings.ReplaceAll(crateName, "-", "_") }
 
-// rustPackages are the contract packages the Rust consumer speaks. Every other package in
-// the module is skipped, exactly as protoc-gen-swift-codable filters to the Swift packages.
-var rustPackages = map[string]bool{
-	"observability.v1": true,
+// rustPackages are the contract packages the Rust consumer speaks, set in main from the
+// -packages opt (comma-separated, default defaultPackages). Every other package in the module
+// is skipped, exactly as protoc-gen-swift-codable filters to the Swift packages.
+var rustPackages = parsePackages(defaultPackages)
+
+// parsePackages splits the comma-separated `packages` opt into the allowlist set, trimming
+// surrounding whitespace and dropping empty entries.
+func parsePackages(csv string) map[string]bool {
+	out := map[string]bool{}
+	for _, p := range strings.Split(csv, ",") {
+		if p = strings.TrimSpace(p); p != "" {
+			out[p] = true
+		}
+	}
+	return out
 }
 
 // timestampFullName is the one well-known type observability.v1 uses; it maps to an RFC3339
@@ -87,8 +112,19 @@ var rustPackages = map[string]bool{
 const timestampFullName protoreflect.FullName = "google.protobuf.Timestamp"
 
 func main() {
-	protogen.Options{}.Run(func(gen *protogen.Plugin) error {
+	// crate_name and packages are buf opt: params, parsed via the standard protoc-plugin
+	// flag.FlagSet wired through protogen's ParamFunc. They default to this repo's values, so
+	// behavior is unchanged when no opt is passed; delightd passes its own to run this same
+	// binary unforked (see the package doc and buf.gen.yaml).
+	var flags flag.FlagSet
+	crateNameOpt := flags.String("crate_name", defaultCrateName,
+		"Cargo package name for the generated crate (hyphens map to the underscore lib path)")
+	packagesOpt := flags.String("packages", defaultPackages,
+		"comma-separated proto package allowlist the Rust consumer speaks; others are skipped")
+	protogen.Options{ParamFunc: flags.Set}.Run(func(gen *protogen.Plugin) error {
 		gen.SupportedFeatures = uint64(1) // FEATURE_PROTO3_OPTIONAL
+		crateName = *crateNameOpt
+		rustPackages = parsePackages(*packagesOpt)
 
 		// Group the files we generate for by their proto package, so a package that spans
 		// multiple files lands in one Rust module. (observability.v1 is a single file today.)

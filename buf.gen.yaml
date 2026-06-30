@@ -48,9 +48,16 @@ plugins:
       - paths=source_relative
   # protoc-gen-rust-serde (local, in cmd/) emits a plain serde crate -- no prost, no
   # protobuf runtime -- for the packages a Rust consumer speaks, so Rust speaks protojson
-  # the same way the Swift target does (the wire is protojson, not binary protobuf). Scoped
-  # to observability.v1 for now (the floater); other packages are skipped. It derives the
-  # module paths from the proto package, so it takes no paths= opt. Built via
-  # `go install ./cmd/protoc-gen-rust-serde`. The whole gen/rust crate is generated.
+  # the same way the Swift target does (the wire is protojson, not binary protobuf). The
+  # crate name and the package allowlist are opt: params (crate_name, packages) so another
+  # repo runs this SAME binary unforked -- delightd emits its registry.v1 crate with
+  # crate_name=delightd-contracts,packages=registry.v1. Passed explicitly here (the defaults)
+  # to exercise the param path and self-document it; scoped to observability.v1 (the floater),
+  # other packages skipped. It derives the module paths from the proto package, so it takes no
+  # paths= opt. Built via `go install ./cmd/protoc-gen-rust-serde`. The whole gen/rust crate
+  # is generated.
   - local: protoc-gen-rust-serde
     out: gen/rust
+    opt:
+      - crate_name=big-little-mesh-contracts
+      - packages=observability.v1
