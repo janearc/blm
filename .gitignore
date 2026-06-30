@@ -14,6 +14,13 @@ __pycache__/
 # built protoc plugins (use `go install ./cmd/...`)
 /protoc-gen-fsm
 /protoc-gen-swift-codable
+/protoc-gen-rust-serde
+
+# rust (the generated gen/rust crate is committed; its build output is not). Cargo.lock is
+# omitted because gen/rust is a library consumed via a git/path dependency -- the consumer's
+# lock governs the build.
+gen/rust/target/
+gen/rust/Cargo.lock
 
 # swift package build artifacts (Package.swift is at the repo root)
 .build/
