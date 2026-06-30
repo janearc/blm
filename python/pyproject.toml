@@ -55,6 +55,12 @@ build-backend = "hatchling.build"
 # archetype layer, and the contracts. birblib is a distinct top-level package (not an
 # extension of frood), shipped in the same distribution to keep cross-repo installs
 # to one git dependency on a connectivity-hostile network (see §9.1: lib name/home is open).
+# frood is a PEP 420 NAMESPACE package, deliberately: it spans the hand-written lib
+# (python/frood: emit, register, watcher, ...) AND the generated contract package frood.v1
+# (gen/python/frood/v1). That is why python/frood has NO __init__.py -- a regular package there
+# would shadow the namespace and make `from frood.v1 import frood_pb2` unresolvable, which is
+# exactly the import the register-client's generated code does. Do NOT add an __init__.py to
+# python/frood. The force-include below merges the generated frood.v1 into the same frood/ tree.
 [tool.hatch.build.targets.wheel]
 packages = ["frood", "birblib"]
 
@@ -62,3 +68,8 @@ packages = ["frood", "birblib"]
 "../gen/python/bento" = "bento"
 "../gen/python/model" = "model"
 "../gen/python/observability" = "observability"
+# registry.v1 (the /register broker wire, vendored from delightd) and frood.v1 (the universal
+# frood interface registry.v1 imports) -- the register-client needs both at runtime, so the
+# shipped distribution must carry them, not just bento/model/observability.
+"../gen/python/registry" = "registry"
+"../gen/python/frood" = "frood"
