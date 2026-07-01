@@ -11,3 +11,10 @@ import _ "embed"
 //
 //go:embed bento.proto
 var Schema string
+
+// SubjectBentoLifecycleEvent is the RecordNameStrategy subject for the bento lifecycle event, as
+// the ONE canonical home for the string: the sidecar produces under it and admin.FleetSubjects
+// provisions it, and both must name the same subject. Co-locating it with the schema it registers
+// under means a message rename changes the subject in one place, not silently across scattered
+// literals.
+const SubjectBentoLifecycleEvent = "bento.v1.BentoLifecycleEvent"

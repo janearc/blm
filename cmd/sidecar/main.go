@@ -33,14 +33,17 @@ import (
 
 const (
 	// the shared bento lifecycle topic; consumers filter by bento_kind. delightd does
-	// NOT subscribe here (it is the registry/orchestrator, not a bento consumer).
+	// NOT subscribe here (it is the registry/orchestrator, not a bento consumer). The subject
+	// is the canonical proto-package const -- the same one admin.FleetSubjects provisions under --
+	// so what the sidecar produces and what gets provisioned cannot drift.
 	topicBentoEvents = "bento.events"
-	subjectBento     = "bento.v1.BentoLifecycleEvent"
+	subjectBento     = bentoproto.SubjectBentoLifecycleEvent
 
 	// the observability topic obs-svc consumes; the sidecar is the frood's only
-	// producer, so the heartbeat is the one thing touching kafka on its behalf.
+	// producer, so the heartbeat is the one thing touching kafka on its behalf. Subject from the
+	// canonical const, same as the provisioner and frood.Heartbeat.
 	topicObservability = "observability.events"
-	subjectHeartbeat   = "observability.v1.ServiceHealthHeartbeat"
+	subjectHeartbeat   = observabilityproto.SubjectServiceHealthHeartbeat
 )
 
 var startTime = time.Now()

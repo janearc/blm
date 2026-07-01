@@ -90,3 +90,21 @@ func TestFleetSubjects_IncludesHeartbeatWithSchema(t *testing.T) {
 		t.Fatal("FleetSubjects must include observability.v1.ServiceHealthHeartbeat")
 	}
 }
+
+// TestFleetSubjects_IncludesBentoLifecycleWithSchema guards the bento subject a watcher frood
+// (magpie) declares it emits at register time -- delightd verifyContracts would 422 that emit if
+// the subject were not provisioned.
+func TestFleetSubjects_IncludesBentoLifecycleWithSchema(t *testing.T) {
+	var found bool
+	for _, s := range FleetSubjects() {
+		if s.Subject == "bento.v1.BentoLifecycleEvent" {
+			found = true
+			if s.SchemaText == "" {
+				t.Error("bento lifecycle subject has empty schema text (the embedded proto did not load)")
+			}
+		}
+	}
+	if !found {
+		t.Fatal("FleetSubjects must include bento.v1.BentoLifecycleEvent (a watcher declares it emits it)")
+	}
+}

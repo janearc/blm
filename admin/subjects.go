@@ -19,6 +19,7 @@ import (
 	"strings"
 	"time"
 
+	bentoproto "github.com/janearc/big-little-mesh/proto/bento/v1"
 	observabilityproto "github.com/janearc/big-little-mesh/proto/observability/v1"
 )
 
@@ -85,14 +86,15 @@ func registerSubject(ctx context.Context, httpc *http.Client, srURL string, s Su
 // FleetSubjects is the contract-schema set provisioned ahead of registration -- the schema sibling
 // of FleetTopics. Today it is the observability.v1 records that ride observability.events: the
 // heartbeat every frood MUST emit (delightd's /register hard-requires this subject) and the
-// token-burn event. Both register from the one embedded observability.proto source; their
-// RecordNameStrategy subjects differ only by message name. The subject strings come from the
-// canonical observabilityproto consts -- the same constants frood.Heartbeat produces under -- so
-// the provisioned subject and the produced subject cannot drift. Add a subject here when a new
-// contract becomes a register-time requirement.
+// token-burn event -- plus the bento lifecycle event, which a watcher frood (magpie) declares it
+// emits at register time, so its subject must exist too. Each subject string comes from the
+// canonical proto-package const -- the SAME const its producer emits under (frood.Heartbeat, the
+// sidecar) -- so the provisioned subject and the produced subject cannot drift. Add a subject here
+// when a new contract becomes a register-time requirement.
 func FleetSubjects() []SubjectSpec {
 	return []SubjectSpec{
 		{Subject: observabilityproto.SubjectServiceHealthHeartbeat, SchemaText: observabilityproto.Schema},
 		{Subject: observabilityproto.SubjectTokenBurnEvent, SchemaText: observabilityproto.Schema},
+		{Subject: bentoproto.SubjectBentoLifecycleEvent, SchemaText: bentoproto.Schema},
 	}
 }
