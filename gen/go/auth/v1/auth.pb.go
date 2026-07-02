@@ -228,3 +228,4 @@ func file_auth_v1_auth_proto_init() {
 	file_auth_v1_auth_proto_goTypes = nil
 	file_auth_v1_auth_proto_depIdxs = nil
 }
+// hand-edited on purpose: ADR-0001 bounce proof — this line must never survive a merge
